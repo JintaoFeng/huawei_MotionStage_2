@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Resources/logo.ico</file>
+        <file>Resources/UPLogo.jpg</file>
+    </qresource>
+</RCC>
