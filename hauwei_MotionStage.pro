@@ -16,15 +16,23 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    axis.cpp \
+    lightbutton.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    table.cpp
 
 HEADERS += \
+    axis.h \
     gts.h \
-    mainwindow.h
+    lightbutton.h \
+    mainwindow.h \
+    table.h
 
 FORMS += \
-    mainwindow.ui
+    axis.ui \
+    mainwindow.ui \
+    table.ui
 
 RC_ICONS = Resources/logo.ico
 

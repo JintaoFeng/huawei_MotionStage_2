@@ -37,6 +37,8 @@
 #define MC_PROFILE                      31
 #define MC_CONTROL                      32
 
+#define MC_SMART_CUTTER                 400
+
 #define CAPTURE_HOME                    1
 #define CAPTURE_INDEX                   2
 #define CAPTURE_PROBE                   3
@@ -71,7 +73,6 @@
 #define FOLLOW_SEGMENT_STOP             2
 #define FOLLOW_SEGMENT_CONTINUE         3
 
-#define INTERPOLATION_AXIS_MAX          4
 #define CRD_FIFO_MAX                    4096
 #define FIFO_MAX						2
 #define CRD_MAX                         2
@@ -107,11 +108,41 @@
 #define CRD_OPERATION_TYPE_LASER_FOLLOW_OFF_EX	  27
 #define CRD_OPERATION_TYPE_LASER_FOLLOW_SPLINE	  28
 #define CRD_OPERATION_TYPE_MOTION_DATA			  29
+#define CRD_OPERATION_TYPE_SET_LASER_DIS_ENABLE  (30)
+#define CRD_OPERATION_TYPE_SELECT_LASER_DIS_TABLE (31)
+#define CRD_OPERATION_TYPE_BUF_STOP				 (36)
+#define CRD_OPERATION_TYPE_BUF_MOVE_JOG			 (37)
+#define CRD_OPERATION_TYPE_BUF_TREND			  50
+
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_MASTER     (60)
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_EVENT      (61)
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_EVENT_TRIGGER	 (62)	//新前瞻指令需要通过这些宏进行区分，GT_BufFollowEventCross和GT_BufFollowEventTrigger共用CRD_OPERATION_TYPE_BUF_FOLLOW_EVENT，因此增加此宏进行区分
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_START      (63)
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_NEXT       (66)	
+#define CRD_OPERATION_TYPE_BUF_FOLLOW_RETURN     (68)
+
+#define CRD_OPERATION_TYPE_BUF_EVENT_ON			 (70)
+#define CRD_OPERATION_TYPE_BUF_EVENT_OFF		 (71)
+
+#define CRD_OPERATION_TYPE_WORK_LASER_FOLLOW_RATIO	(72)
+
+#define CRD_OPERATION_TYPE_BUF_SMART_CUTTER_ENABLE (80)
+
+#define CRD_OPERATION_TYPE_BUF_POS_COMPARE_START (90)
+#define CRD_OPERATION_TYPE_BUF_POS_COMPARE_STOP (91)
+#define CRD_OPERATION_TYPE_BUF_POS_COMPARE_PSO_PRM (97)
+#define CRD_OPERATION_TYPE_BUF_SET_COMPARE_PORT (98)
+
+#define CRD_OPERATION_TYPE_BUF_2D_COMPARE_DATA		(100)
+#define CRD_OPERATION_TYPE_BUF_2D_COMPARE_PULSE		(101)
+
+#define CRD_OPERATION_TYPE_LASER_FOLLOW_TABLE	 (200)
 
 #define INTERPOLATION_MOTION_TYPE_LINE  0
 #define INTERPOLATION_MOTION_TYPE_CIRCLE 1
 #define INTERPOLATION_MOTION_TYPE_HELIX 2
 #define INTERPOLATION_MOTION_TYPE_CIRCLE_3D 3
+#define INTERPOLATION_MOTION_TYPE_CIRCLE_VARIABLE      (60)
 
 #define INTERPOLATION_CIRCLE_PLAT_XY    0
 #define INTERPOLATION_CIRCLE_PLAT_YZ    1
@@ -123,6 +154,7 @@
 
 #define INTERPOLATION_CIRCLE_DIR_CW     0
 #define INTERPOLATION_CIRCLE_DIR_CCW    1
+#define CRD_OPERATION_TYPE_LASER_FOLLOW_RATIO     6
 
 #define COMPARE_PORT_HSIO                 (0)             //??zW??HSIO?
 #define COMPARE_PORT_GPO                  (1)             //??zW??GPO?
@@ -142,6 +174,16 @@
 #define LASER_CTRL_VOLTAGE              (2)                 // ??:?
 #define LASER_CTRL_MODE_PWM2            (3)                 // ??:PWM2
 
+#define CRD_BUFFER_MODE_DYNAMIC_DEFAULT  (0)
+#define CRD_BUFFER_MODE_DYNAMIC_KEEP     (1)
+#define CRD_BUFFER_MODE_STATIC_INPUT     (11)
+#define CRD_BUFFER_MODE_STATIC_READY     (12)
+#define CRD_BUFFER_MODE_STATIC_START     (13)
+
+#define CRD_SMOOTH_MODE_NONE                   (0)
+#define CRD_SMOOTH_MODE_PERCENT                (1)
+#define CRD_SMOOTH_MODE_JERK                   (2)
+
 typedef struct TrapPrm
 {
     double acc;
@@ -149,6 +191,13 @@ typedef struct TrapPrm
     double velStart;
     short  smoothTime;
 } TTrapPrm;
+
+typedef struct TTrapTime
+{
+	double totalTime;
+	double remainderTime;
+	double pad[2];
+} TTrapTime;
 
 typedef struct JogPrm
 {
@@ -216,7 +265,7 @@ typedef struct CrdData
 {
     short motionType;                             // 运动类型,0:直线插补,1:圆弧插补
     short circlePlat;                             // 圆弧插补的平面
-    long pos[INTERPOLATION_AXIS_MAX];             // 当前段各轴终点位置
+    long pos[8];             // 当前段各轴终点位置
     double radius;                                  // 圆弧插补的半径
     short circleDir;                              // 圆弧旋转方向,0:顺时针;1:逆时针
     double center[3];                               // 圆弧插补的圆心坐标
@@ -225,7 +274,7 @@ typedef struct CrdData
     short velEndZero;                             // 标志当前段的终点速度是否强制为0,0:不强制为0;1:强制为0
     TCrdBufOperation operation;                   // 缓存区延时和IO结构体
 
-    double cos[INTERPOLATION_AXIS_MAX];           // 当前段各轴对应的余弦值
+    double cos[8];           // 当前段各轴对应的余弦值
     double velEnd;                                // 当前段合成终点速度
     double velEndAdjust;                          // 调整终点速度时用到的变量(前瞻模块)
     double r;                                     // 当前段合成位移量
@@ -236,7 +285,9 @@ typedef struct Trigger
     short encoder;
     short probeType;
     short probeIndex;
+	short sense;
     short offset;
+	unsigned long loop;
     short windowOnly;
     long firstPosition;
     long lastPosition;
@@ -248,6 +299,15 @@ typedef struct TriggerStatus
     short done;
     long position;
 }TTriggerStatus;
+
+typedef struct TriggerStatusEx
+{
+	short execute;
+	short done;
+	long position;
+	unsigned long clock;
+	unsigned long loopCount;
+}TTriggerStatusEx;
 
 typedef struct
 {
@@ -267,6 +327,73 @@ typedef struct
     short threshold;
 } T2DComparePrm;
 
+typedef struct  
+{
+	short mode;
+	short encoderX;
+	short encoderY;
+	short source;
+	short outputType;
+	short startLevel;
+	long pulseTime;
+	short maxerr;
+	long pulseCount;
+	long pulseCycle;
+	long interval;
+	unsigned short pad1[2];
+	long pad2[2];
+}T2DComparePrmEx;
+typedef struct
+{
+	long px;
+	long py;
+	long intervalX;
+	long intervalY;
+	long count;
+}T2DCompareDataGroup;
+
+typedef struct
+{
+	long startPosX;
+	long startPosY;
+	long intervalX;
+	long intervalY;
+	unsigned long count;
+}T2DCompareLinear;
+
+typedef struct  
+{
+	double time;
+	long segmentUsed;
+	long segmentHead;
+	long segmentTail;
+} TCrdTime;
+
+typedef struct  
+{
+	short percent;
+	short accStartPercent;
+	short decEndPercent;
+	double reserve;
+} TCrdSmooth;
+
+typedef struct
+{
+	short          mdlType;                       // 扩展模块的类型
+
+	short          mdlAddressBegin;               // 该模块的起始地址偏移
+
+	short          adChannels;                    // 如果为AD时，通道的数量
+	double         adMaxVoltage;                  // 如果为AD时，最大转换位对应的电压值
+	double         adMinVoltage;                  // 如果为AD时，最小转换位对应的电压值
+
+	short          daChannels;                    // 如果为DA时，通道的数量
+	double         daMaxVoltage;                  // 如果为DA时，最大转换位对应的电压值
+	double         daMinVoltage;                  // 如果为DA时，最小转换位对应的电压值
+
+	unsigned short outSave;                       // 保留当前IO输出的值
+}TExtMdlCfgInfo;
+
 GT_API GT_GetDllVersion(char **pDllVersion);
 
 GT_API GT_SetCardNo(short index);
@@ -278,7 +405,7 @@ GT_API GT_SetInterfaceBoardSts(short type);
 GT_API GT_Open(short channel=0,short param=1);
 GT_API GT_Close(void);
 
-GT_API GT_LoadConfig(char* pFile);
+GT_API GT_LoadConfig(char *pFile);
 
 GT_API GT_AlarmOff(short axis);
 GT_API GT_AlarmOn(short axis);
@@ -304,10 +431,6 @@ GT_API GT_CtrlMode(short axis,short mode);
 GT_API GT_SetStopIo(short axis,short stopType,short inputType,short inputIndex);
 GT_API GT_GpiSns(unsigned short sense);
 GT_API GT_SetAdcFilter(short adc,short filterTime);
-GT_API GT_SetAxisPrfVelFilter(short axis,short filterNumExp);
-GT_API GT_GetAxisPrfVelFilter(short axis,short *pFilterNumExp);
-GT_API GT_SetAxisEncVelFilter(short axis,short filterNumExp);
-GT_API GT_GetAxisEncVelFilter(short axis,short *pFilterNumExp);
 GT_API GT_SetAxisInputShaping(short axis,short enable,short count,double k);
 
 GT_API GT_SetDo(short doType,long value);
@@ -336,6 +459,7 @@ GT_API GT_GetEncVel(short encoder,double *pValue,short count=1,unsigned long *pC
 
 GT_API GT_SetCaptureMode(short encoder,short mode);
 GT_API GT_GetCaptureMode(short encoder,short *pMode,short count=1);
+GT_API GT_StopCapture(short encoder);
 GT_API GT_GetCaptureStatus(short encoder,short *pStatus,long *pValue,short count=1,unsigned long *pClock=NULL);
 GT_API GT_SetCaptureSense(short encoder,short mode,short sense);
 GT_API GT_ClearCaptureStatus(short encoder);
@@ -374,6 +498,7 @@ GT_API GT_EnableGantry(short gantryMaster,short gantrySlave,double masterKp,doub
 GT_API GT_DisableGantry();
 GT_API GT_SetGantryErrLmt(long gantryErrLmt);
 GT_API GT_GetGantryErrLmt(long *pGantryErrLmt);
+GT_API GT_ZeroGantryPos(short gantryMaster,short gantrySlave);
 
 GT_API GT_GetPrfPos(short profile,double *pValue,short count=1,unsigned long *pClock=NULL);
 GT_API GT_GetPrfVel(short profile,double *pValue,short count=1,unsigned long *pClock=NULL);
@@ -411,6 +536,7 @@ GT_API GT_GetVel(short profile,double *pVel);
 GT_API GT_PrfTrap(short profile);
 GT_API GT_SetTrapPrm(short profile,TTrapPrm *pPrm);
 GT_API GT_GetTrapPrm(short profile,TTrapPrm *pPrm);
+GT_API GT_GetTrapTime(short profile,TTrapTime *pTime);
 
 GT_API GT_PrfJog(short profile);
 GT_API GT_SetJogPrm(short profile,TJogPrm *pPrm);
@@ -427,6 +553,13 @@ GT_API GT_PtStart(long mask,long option=0);
 GT_API GT_SetPtMemory(short profile,short memory);
 GT_API GT_GetPtMemory(short profile,short *pMemory);
 GT_API GT_PtGetSegNum(short profile,long *pSegNum);
+GT_API GT_SetPtPrecisionMode(short profile,short precisionMode);
+GT_API GT_GetPtPrecisionMode(short profile,short *pPrecisionMode);
+GT_API GT_SetPtVel(short profile,double velLast,short fifo);
+GT_API GT_SetPtLink(short profile,short fifo,short list);
+GT_API GT_GetPtLink(short profile,short fifo,short *pList);
+GT_API GT_PtDoBit(short profile,short doType,short index,short value,short fifo);
+GT_API GT_PtAo(short profile,short aoType,short index,double value,short fifo);
 
 GT_API GT_PrfGear(short profile,short dir=0);
 GT_API GT_SetGearMaster(short profile,short masterIndex,short masterType=GEAR_MASTER_PROFILE,short masterItem=0);
@@ -471,8 +604,15 @@ GT_API GT_GetVarId(char *pFunName,char *pVarName,TVarInfo *pVarInfo);
 GT_API GT_SetVarValue(short page,TVarInfo *pVarInfo,double *pValue,short count=1);
 GT_API GT_GetVarValue(short page,TVarInfo *pVarInfo,double *pValue,short count=1);
 
+GT_API GT_SetCrdMapBase(short crd,short base);
+GT_API GT_GetCrdMapBase(short crd,short *pBase);
+GT_API GT_SetCrdSmooth(short crd,TCrdSmooth *pCrdSmooth);
+GT_API GT_GetCrdSmooth(short crd,TCrdSmooth *pCrdSmooth);
+GT_API GT_SetCrdJerk(short crd,double jerkMax);
+GT_API GT_GetCrdJerk(short crd,double *pJerkMax);
 GT_API GT_SetCrdPrm(short crd,TCrdPrm *pCrdPrm);
 GT_API GT_GetCrdPrm(short crd,TCrdPrm *pCrdPrm);
+GT_API GT_SetArcAllowError(short crd,double error);
 GT_API GT_CrdSpace(short crd,long *pSpace,short fifo=0);
 GT_API GT_CrdData(short crd,TCrdData *pCrdData,short fifo=0);
 GT_API GT_CrdDataCircle(short crd,TCrdData *pCrdData,short fifo=0);
@@ -538,6 +678,7 @@ GT_API GT_ArcYZROverride2WN(short crd,long y,long z,double radius,short circleDi
 GT_API GT_ArcYZCOverride2WN(short crd,long y,long z,double yCenter,double zCenter,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_ArcZXROverride2WN(short crd,long z,long x,double radius,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_ArcZXCOverride2WN(short crd,long z,long x,double zCenter,double xCenter,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
+GT_API GT_ArcXYZOverride2WN(short crd,long x,long y,long z,double interX,double interY,double interZ,double synVel,double synAcc,double velEnd,long segNum,short fifo=0);
 GT_API GT_HelixXYRZWN(short crd,long x,long y,long z,double radius,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_HelixXYCZWN(short crd,long x,long y,long z,double xCenter,double yCenter,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_HelixYZRXWN(short crd,long x,long y,long z,double radius,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
@@ -550,6 +691,7 @@ GT_API GT_HelixYZRXOverride2WN(short crd,long x,long y,long z,double radius,shor
 GT_API GT_HelixYZCXOverride2WN(short crd,long x,long y,long z,double yCenter,double zCenter,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_HelixZXRYOverride2WN(short crd,long x,long y,long z,double radius,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 GT_API GT_HelixZXCYOverride2WN(short crd,long x,long y,long z,double zCenter,double xCenter,short circleDir,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
+GT_API GT_BufTrend(short crd,unsigned long trendSegNum,double trendDistance,double trendVelEnd,short fifo=0);
 GT_API GT_BufIO(short crd,unsigned short doType,unsigned short doMask,unsigned short doValue,short fifo=0);
 GT_API GT_BufEnableDoBitPulse(short crd,short doType,short doIndex,unsigned short highLevelTime,unsigned short lowLevelTime,long pulseNum,short firstLevel,short fifo=0);
 GT_API GT_BufDisableDoBitPulse(short crd,short doType,short doIndex,short fifo=0);
@@ -574,6 +716,7 @@ GT_API GT_CrdStartStep(short mask,short option);
 GT_API GT_CrdStepMode(short mask,short option);
 GT_API GT_SetOverride(short crd,double synVelRatio);
 GT_API GT_SetOverride2(short crd,double synVelRatio);
+GT_API GT_SetMaxOverrideLA(double maxSynVelRatio);
 GT_API GT_InitLookAhead(short crd,short fifo,double T,double accMax,short n,TCrdData *pLookAheadBuf);
 GT_API GT_GetLookAheadSpace(short crd,long *pSpace,short fifo=0);
 GT_API GT_GetLookAheadSegCount(short crd,long *pSegCount,short fifo=0);
@@ -601,11 +744,16 @@ GT_API GT_BufLaserFollowRatio(short crd,double ratio,double minPower,double maxP
 GT_API GT_BufLaserFollowMode(short crd,short source =0,short fifo=0,short channel=0,double startPower =0);
 GT_API GT_BufLaserFollowOff(short crd,short fifo=0,short channel=0);
 GT_API GT_BufLaserFollowSpline(short crd,short tableId,double minPower,double maxPower,short fifo=0,short channel=0);
+GT_API GT_LnXYZACUVW(short crd,long *pPos,short posMask,double synVel,double synAcc,double velEnd=0,short fifo=0);
+GT_API GT_LnXYZACUVWWN(short crd,long *pPos,short posMask,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
+GT_API GT_LnXYZACUVWOverride2(short crd,long *pPos,short posMask,double synVel,double synAcc,double velEnd=0,short fifo=0);
+GT_API GT_LnXYZACUVWOverride2WN(short crd,long *pPos,short posMask,double synVel,double synAcc,double velEnd=0,long segNum=0,short fifo=0);
 
 GT_API GT_PrfPvt(short profile);
 GT_API GT_SetPvtLoop(short profile,long loop);
 GT_API GT_GetPvtLoop(short profile,long *pLoopCount,long *pLoop);
 GT_API GT_PvtStatus(short profile,short *pTableId,double *pTime,short count=1);
+GT_API GT_PvtTableClear(short tableId);
 GT_API GT_PvtStart(long mask);
 GT_API GT_PvtTableSelect(short profile,short tableId);
 
@@ -633,6 +781,7 @@ GT_API GT_EndHandwheel(short slave);
 GT_API GT_SetTrigger(short i,TTrigger *pTrigger);
 GT_API GT_GetTrigger(short i,TTrigger *pTrigger);
 GT_API GT_GetTriggerStatus(short i,TTriggerStatus *pTriggerStatus,short count=1);
+GT_API GT_GetTriggerStatusEx(short i,TTriggerStatusEx *pTriggerStatusEx,short count=1);
 GT_API GT_ClearTriggerStatus(short i);
 
 GT_API GT_SetComparePort(short channel,short hsio0,short hsio1);
@@ -658,6 +807,10 @@ GT_API GT_2DCompareSetPrm(short chn,T2DComparePrm *pPrm);
 GT_API GT_2DCompareData(short chn,short count,T2DCompareData *pBuf,short fifo);
 GT_API GT_2DCompareStart(short chn);
 GT_API GT_2DCompareClearData(short chn);
+GT_API GT_2DCompareSetPreOutTime(short chn,double preOutputTime);
+GT_API GT_2DCompareSetPrmEx(short chn,T2DComparePrmEx *pMode);
+GT_API GT_2DCompareDataGroup(short chn,short count,T2DCompareDataGroup *pDataGroup,short fifo);
+GT_API GT_2DCompareLinear(short chn,T2DCompareLinear *pPrm);
 
 GT_API GT_SetAxisMode(short axis,short mode);
 GT_API GT_GetAxisMode(short axis,short *pMode);
@@ -695,14 +848,20 @@ GT_API GT_SetExtDaValue(short mdl,short chn,unsigned short value);
 GT_API GT_SetExtDaVoltage(short mdl,short chn,double value);
 GT_API GT_GetStsExtMdl(short mdl,short chn,unsigned short *pStatus);
 GT_API GT_GetExtDoValue(short mdl,unsigned short *pValue);
+GT_API GT_GetExtAdCurrent(short mdl,short chn,double *pValue);
 
 GT_API GT_GetExtMdlMode(short *pMode);
 GT_API GT_SetExtMdlMode(short mode);
 GT_API GT_UploadConfig();
 GT_API GT_DownloadConfig();
+GT_API GT_GetConfig(short mdl,TExtMdlCfgInfo *pExtMdlCfgInfo);
+GT_API GT_SetConfig(short mdl,TExtMdlCfgInfo *pExtMdlCfgInfo);
+GT_API GT_GetDriverVersion(unsigned short *mainVer,unsigned short *slaveVer);
+GT_API GT_SaveConfigToFile(char *pFile);
+GT_API GT_GetChnStsExtMdl(unsigned short *pStatus);
 
 GT_API GT_GetUuid(char *pCode,short count);
-
+GT_API GT_SetUuid(char *pCode,short count);
 
 //////////////////////////////////////////////////////////////////////////
 //2D Compensate
@@ -733,6 +892,7 @@ GT_API GT_GetCompensate2DValue(short axis,double *pValue);
 //////////////////////////////////////////////////////////////////////////
 #define HOME_STAGE_IDLE						(0)
 #define HOME_STAGE_START					(1)
+#define HOME_STAGE_ON_HOME_LIMIT_ESCAPE	(2)
 
 #define HOME_STAGE_SEARCH_LIMIT				(10)
 #define HOME_STAGE_SEARCH_LIMIT_STOP		(11)
@@ -743,6 +903,8 @@ GT_API GT_GetCompensate2DValue(short axis,double *pValue);
 #define HOME_STAGE_SEARCH_LIMIT_RETURN_STOP	(16)
 
 #define HOME_STAGE_SEARCH_HOME				(20)
+
+#define HOME_STAGE_SEARCH_HOME_STOP		(22)
 
 #define HOME_STAGE_SEARCH_HOME_RETURN		(25)
 
@@ -778,6 +940,9 @@ GT_API GT_GetCompensate2DValue(short axis,double *pValue);
 #define HOME_MODE_HOME_INDEX				(22)
 
 #define HOME_MODE_INDEX						(30)
+
+#define HOME_MODE_FORCED_HOME			(40)
+#define HOME_MODE_FORCED_HOME_INDEX	(41)
 
 typedef struct  
 {
@@ -894,8 +1059,631 @@ GT_API GT_GetLeadScrewCompInnerValue(short axis,short dir,long pos,long *pCompVa
 
 GT_API GT_SetProfileScale(short axis,long alpha,long beta);
 GT_API GT_GetProfileScale(short axis,long *pAlpha,long *pBeta);
+GT_API GT_SetEncoderScale(short encoder,long alpha,long beta);
+GT_API GT_GetEncoderScale(short encoder,long *pAlpha,long *pBeta);
 
 GT_API GT_MultiAxisOn(unsigned long mask);
 GT_API GT_MultiAxisOff(unsigned long mask);
 GT_API GT_SetAxisOnDelayTime(unsigned short ms);
 GT_API GT_GetAxisOnDelayTime(unsigned short *pMs);
+
+GT_API GT_SetLaserDisTable1D(short count,double *pRatio,long *pPos,double minPower,double maxPower,double *pLimitPower,short channel=0);
+GT_API GT_SetLaserDisTable2D(short axisIndex[2],short count[2],double *pRatio,long *pXPos,long *pYPos, 
+							 double minPower,double maxPower,double *pLimitPower,short channel=0);
+GT_API GT_SetLaserDisTable2DEx(short axisIndex[2],short count[2],double *pRatio,long posBegin[2],long posStep[2], 
+							   double minPower,double maxPower,double *pLimitPower,short channel=0);
+GT_API GT_SetLaserCrdMap(short channel,short map);
+GT_API GT_GetLaserCrdMap(short channel,short *pMap);
+
+//////////////////////////////////////////////////////////////////////////
+//AutoFocus
+//////////////////////////////////////////////////////////////////////////
+GT_API GT_AutoFocus(unsigned short mode,double kp,short reverse,short chanel);
+GT_API GT_SetAutoFocusRefVol(double refVol,double maxVol,double minVol,short chanel);
+GT_API GT_GetAutoFocusStatus(unsigned short *pStatus,short count);
+GT_API GT_ConfigAutoFocus(short chnAdc,short chanel);
+GT_API GT_SetAutoFocusAuxPrm(double kf,double kd,double limitKd,short chanel);
+GT_API GT_SetAutoFocusDeadVoltage(double voltage,short chanel);
+
+GT_API GT_Delay(unsigned short time);
+GT_API GT_DelayHighPrecision(unsigned short time);
+
+//////////////////////////////////////////////////////////////////////////
+//Random Code
+//////////////////////////////////////////////////////////////////////////
+GT_API GT_SetRandCode(short addr,short *pData);
+GT_API GT_GetRandCode(short addr,short *pData);
+
+#define CRD_BUFFER_MODE_DYNAMIC_DEFAULT  (0)
+#define CRD_BUFFER_MODE_DYNAMIC_KEEP     (1)
+
+#define CRD_BUFFER_MODE_STATIC_INPUT     (11)
+#define CRD_BUFFER_MODE_STATIC_READY     (12)
+#define CRD_BUFFER_MODE_STATIC_START     (13)
+GT_API GT_SetCrdBufferMode(short crd,short bufferMode,short fifo);
+GT_API GT_GetCrdBufferMode(short crd,short *pBufferMode,short fifo);
+GT_API GT_GetCrdSegmentTime(short crd,long segmentIndex,double *pSegmentTime,long *pSegmentNumber,short fifo);
+GT_API GT_GetCrdTime(short crd,TCrdTime *pTime,short fifo);
+
+GT_API GT_SetLeadScrewLink(short axis,short link);
+GT_API GT_GetLeadScrewLink(short axis,short *pLink);
+
+
+//////////////////////////////////////////////////////////////////////////
+//Crd Follow
+//////////////////////////////////////////////////////////////////////////
+typedef struct  
+{
+	short crdAxis;
+	short masterIndex;
+	short masterType;
+} TBufFollowMaster;
+
+typedef struct  
+{
+	long masterPos;
+	long pad;
+} TBufFollowEventCross;
+
+typedef struct  
+{
+	short triggerIndex;
+	long triggerOffset;
+	long pad;
+} TBufFollowEventTrigger;
+
+
+typedef struct  
+{
+	short stage;
+	double slavePos;
+	double slaveVel;
+	unsigned long loopCount;
+} TCrdFollowStatus;
+
+typedef struct  
+{
+	double velRatioMax;
+	double accRatioMax;
+	long masterLead;
+	long masterEven;
+	long slaveEven;
+	short dir;
+	short smoothPercent;
+	short synchAlign;
+} TCrdFollowPrm;
+
+GT_API GT_BufFollowMaster(short crd,TBufFollowMaster *pBufFollowMaster,short fifo=0);
+GT_API GT_BufFollowEventCross(short crd,TBufFollowEventCross *pEventCross,short fifo=0);
+GT_API GT_BufFollowEventTrigger(short crd,TBufFollowEventTrigger *pEventTrigger,short fifo=0);
+GT_API GT_BufFollowStart(short crd,long masterSegment,long slaveSegment,long masterFrameWidth,short fifo=0);
+GT_API GT_BufFollowReturn(short crd,double vel,double acc,short smoothPercent,short fifo=0);
+GT_API GT_BufFollowNext(short crd,long width,short fifo=0);
+GT_API GT_GetCrdFollowStatus(short crd,TCrdFollowStatus *pStatus);
+
+GT_API GT_SetCrdFollowLoop(short crd,unsigned long loop);
+GT_API GT_GetCrdFollowLoop(short crd,unsigned long *pLoop);
+GT_API GT_SetCrdFollowPrm(short crd,TCrdFollowPrm *pPrm);
+GT_API GT_GetCrdFollowPrm(short crd,TCrdFollowPrm *pPrm);
+
+typedef struct  
+{
+	short source;
+	short enable;
+	short x;
+	short y;
+	double theta;		// degree
+} TTransformOrthogonal;
+
+GT_API GT_SetTransformOrthogonal(short index,TTransformOrthogonal *pOrthogonal);
+GT_API GT_GetTransformOrthogonal(short index,TTransformOrthogonal *pOrthogonal);
+GT_API GT_GetTransformOrthogonalPosition(short index,double *pPositionX,double *pPositionY);
+
+typedef struct  
+{
+	short source;
+	short enable;
+	short x;
+	short y;
+	short z;
+	double alpha;		// Z轴和XY平面的夹角
+	double beta;		// Z轴在XY平面的投影和X轴的夹角
+	double gama;		// XY轴之间的夹角
+} TTransformPerpendicularity;
+
+GT_API GT_SetTransformPerpendicularity(short index,TTransformPerpendicularity *pPerpendicularity);
+GT_API GT_GetTransformPerpendicularity(short index,TTransformPerpendicularity *pPerpendicularity);
+GT_API GT_GetTransformPerpendicularityPosition(short index,double *pPositionX,double *pPositionY,double *pPositionZ);
+
+GT_API GT_SetLaserPwmDac(double pwmWidth,double frq,short *pDacValue,long count,short channel);
+GT_API GT_LaserPwmDacOn(short channel);
+GT_API GT_LaserPwmDacOff(short channel);
+
+typedef struct
+{
+	short mode;
+	short prm1;
+	short prm2;
+	short prm3;
+	short prm4;
+	double reserve1;
+	double reserve2;
+	double reserve3;
+	double reserve4;
+
+}TMotionSmooth;
+
+GT_API GT_SetMotionSmooth(short axis,TMotionSmooth *pSmooth);
+GT_API GT_GetMotionSmooth(short axis,TMotionSmooth *pSmooth);
+
+typedef struct  
+{
+	short master[2];
+	short masterValueSource[2];
+	long gearRatioNumerator[2];
+	long gearRatioDenominator[2];
+} TCombineAxes;
+
+typedef struct  
+{
+	short enable;
+	double slavePos;
+	double slaveVel;
+} TCombineAxesStatus;
+
+GT_API GT_SetCombineAxes(short index,TCombineAxes *pCombineAxes);
+GT_API GT_GetCombineAxes(short index,TCombineAxes *pCombineAxes);
+GT_API GT_CombineAxesOn(short index);
+GT_API GT_CombineAxesOff(short index);
+GT_API GT_GetCombineAxesStatus(short index,TCombineAxesStatus *pCombineAxesStatus);
+GT_API GT_SetAxisAddition(short axis,short dataType,short additionIndex,short additionType);
+GT_API GT_GetAxisAddition(short axis,short dataType,short *pAdditionIndex,short *pAdditionType);
+
+GT_API GT_SetLeadScrewCrossComp(short axis,short n,long startPos,long lenPos,long *pCompPos,long *pCompNeg,short link);
+GT_API GT_EnableLeadScrewCrossComp(short axis,short mode);
+
+typedef enum 
+{
+	MC_POSITIVE_DIRECTION,
+	MC_NEGATIVE_DIRECTION,
+	MC_CURRENT_DIRECTION,
+	MC_SHORTEST_WAY,
+} EMcDirection;
+
+typedef struct
+{
+	long pos;
+	double vel;
+	double acc;
+	double dec;
+	short percent;
+} TMoveAbsolutePrm;
+
+typedef struct
+{
+	long pos;
+	double vel;
+	double acc;
+	double dec;
+	short percent;
+	double velStart;
+	double velEnd;
+	short accStartPercent;
+	short decEndPercent;
+} TMoveAbsolutePrmEx;
+
+GT_API GT_MoveAbsolute(short profile,TMoveAbsolutePrm *pPrm);
+GT_API GT_GetMoveAbsolute(short profile,TMoveAbsolutePrm *pPrm);
+GT_API GT_MoveAbsoluteEx(short profile,TMoveAbsolutePrmEx *pPrm);
+GT_API GT_GetMoveAbsoluteEx(short profile,TMoveAbsolutePrmEx *pPrm);
+
+typedef struct
+{
+	double vel;
+	double acc;
+	double dec;
+	double jerkBegin;
+	double jerkEnd;
+	short direction;
+} TMoveVelocityPrm;
+
+GT_API GT_MoveVelocity(short profile,TMoveVelocityPrm *pPrm);
+GT_API GT_GetMoveVelocity(short profile,TMoveVelocityPrm *pPrm);
+
+
+//////////////////////////////////////////////////////////////////////////
+//Smart Cutter
+//////////////////////////////////////////////////////////////////////////
+typedef struct  
+{
+	short x;						// X轴对应的规划轴
+	short y;						// Y轴对应的规划轴
+	short c;						// C轴对应的规划轴
+
+	short tableRadiusIndex;			// 半径补偿表索引
+	short tableAngleIndex;			// C轴补偿表索引
+
+	short directionReverse;			// 默认规划位置增大时角度也是增大的
+
+	long offset;		            // C轴旋转角度为0时的规划位置
+	long resolution;				// C轴每转脉冲数
+
+	short adcIndex;					// ADC索引
+	double adcThreshold;			// ADC触发补偿的阈值
+} TSmartCutterPrm;
+
+typedef struct  
+{
+	short enable;
+	short execute;
+	double radiusValue;
+	double angleValue;
+} TSmartCutterInfo;
+
+GT_API GT_SetSmartCutterPrm(short index,TSmartCutterPrm *pPrm);
+GT_API GT_GetSmartCutterPrm(short index,TSmartCutterPrm *pPrm);
+GT_API GT_SmartCutterOn(short index);
+GT_API GT_SmartCutterOff(short index);
+GT_API GT_BufSmartCutterOn(short crd,short smartCutterIndex,short fifo=0);
+GT_API GT_BufSmartCutterOff(short crd,short smartCutterIndex,short fifo=0);
+GT_API GT_GetSmartCutterInfo(short index,TSmartCutterInfo *pInfo);
+
+GT_API GT_SetSmartCutterValue(short index,double radiusValue,double angleValue);
+GT_API GT_SmartCutterStart(short index);
+
+
+//////////////////////////////////////////////////////////////////////////
+//Gantry
+//////////////////////////////////////////////////////////////////////////
+#define GANTRY_MODE_NONE								(-1)
+#define GANTRY_MODE_OPEN_LOOP_GANTRY					(1)
+#define GANTRY_MODE_DECOUPLE_POSITION_LOOP				(2)
+
+GT_API GT_SetGantryMode(short group,short master,short slave,short mode,long syncErrorLimit=1000);
+GT_API GT_GetGantryMode(short group,short *pMaster,short *pSlave,short *pMode,long *pSyncErrorLimit);
+GT_API GT_SetGantryPid(short group,TPid *pGantryPid,TPid *pYawPid);
+GT_API GT_GetGantryPid(short group,TPid *pGantryPid,TPid *pYawPid);
+GT_API GT_GantryAxisOn(short group);
+GT_API GT_GantryAxisOff(short group);
+
+GT_API GT_SetEncoderOutSelect(short mode);
+GT_API GT_GetEncoderOutSelect(short *pMode);
+
+//////////////////////////////////////////////////////////////////////////
+//Standard Home
+//////////////////////////////////////////////////////////////////////////
+
+#define STANDARD_HOME_STAGE_IDLE  (0) //未启动回原点
+#define STANDARD_HOME_STAGE_START (1) //启动回原点
+#define STANDARD_HOME_STAGE_SEARCH_HOME (20) //正在搜索Home
+#define STANDARD_HOME_STAGE_SEARCH_INDEX  (30) //正在搜索Index
+#define STANDARD_HOME_STAGE_GO_HOME       (80) //正在运动到原点
+#define STANDARD_HOME_STAGE_END           (100) //回原点结束
+#define STANDARD_HOME_STAGE_START_CHECK (-1) //启动回原点前自检
+#define STANDARD_HOME_STAGE_CHECKING (-2) //自检中
+
+
+#define STANDARD_HOME_ERROR_NONE		(0) //未发生错误
+#define STANDARD_HOME_ERROR_DISABLE	(10) //执行回原点的轴未使能
+#define STANDARD_HOME_ERROR_ALARM		(20) //执行回原点的轴报警
+#define STANDARD_HOME_ERROR_STOP		(30) //未完成回原点，被停止运动
+#define STANDARD_HOME_ERROR_ON_LIMIT   (40) //触发了限位无法继续
+#define STANDARD_HOME_ERROR_NO_HOME	(50) //未找到Home
+#define STANDARD_HOME_ERROR_NO_INDEX  (60) //未找到Index
+#define STANDARD_HOME_ERROR_NO_LIMIT (70) //未找到限位
+#define STANDARD_HOME_ERROR_ENCODER_DIR_SCALE (-1) //规划器与编码器方向方向相反或者当量不一致
+
+
+typedef struct  
+{
+	short mode;		 // 回原点模式取值范围1~36
+	double highSpeed; // 搜索Home的速度，单位pulse/ms
+	double lowSpeed;	 // 搜索Index的速度，单位pulse/ms
+	double acc;		 // 回零加速度，单位pulse/ms^2
+	long offset;       // 回零偏移量，单位pulse
+	short check; // 是否启用自检功能，1-启用，其它值-不启用
+	short autoZeroPos; // 回零完毕是否自动清零，1-自动清零，其它值-不清零
+	long motorStopDelay; //电机到位延时，单位：控制周期
+	short pad1[3];	 // 保留（不需要设置）
+} TStandardHomePrm;
+
+typedef struct  
+{
+	short run;     // 是正在进行回原点，0—已停止运动，1-正在回原点
+	short stage;   // 回原点运动的阶段
+	short error;    // 回原点过程的发生的错误
+	short pad1[3];       // 保留（无具体含义）
+	long capturePos;  // 捕获到Home或Index时刻的编码器位置
+	long targetPos;    // 需要运动到的目标位置（原点位置或者原点位置+偏移量），在搜索Limit时或者搜索Home或Index时，设置的搜索距离为0，那么该值显示为805306368
+} TStandardHomeStatus;
+
+GT_API GT_ExecuteStandardHome(short axis,TStandardHomePrm *pHomePrm);
+GT_API GT_GetStandardHomePrm(short axis,TStandardHomePrm *pHomePrm);
+GT_API GT_GetStandardHomeStatus(short axis,TStandardHomeStatus *pHomeStatus);
+
+typedef struct  
+{
+	short year;
+	short month;
+	short day;
+	short version;
+	short user;
+	short reserve1;
+	short reserve2;
+	short chip;
+} TVersion;
+
+GT_API GT_GetVersionEx(short type,TVersion *pVersion);
+
+GT_API GT_CrdHsOn(short crd,short fifo,short link=1,unsigned short threshold=200,short lookAheadInMc=0);
+GT_API GT_CrdHsOff(short crd,short fifo);
+
+#define AUTO_HOME_MODE_HOME (1)
+#define AUTO_HOME_MODE_HOME_INDEX (2)
+#define AUTO_HOME_MODE_HOME_STOP (3)
+
+typedef struct
+{
+	short mode;
+	double homeSearchVel;
+	double acc;
+	long homeSearchDis;
+	long indexSearchDis;
+	long homeReturnOffset;
+	long indexReturnOffest;
+}TAutoHomePrm;
+
+typedef struct
+{
+	short run;
+	short stage;
+	short result;
+	long capturePos;
+	long targetPos;
+}TAutoHomeStatus;
+
+GT_API GT_CheckPciCommandFlag(short *pFlag);
+GT_API GT_ResetPciCommandFlag();
+
+GT_API GT_SetStepOutLevel(short axis,short type,short reverse);
+GT_API GT_GetStepOutLevel(short axis,short type,short *pReverse);
+
+
+//////////////////////////////////////////////////////////////////////////
+//兼容GSN位置比较指令的位置比较输出
+//////////////////////////////////////////////////////////////////////////
+typedef struct
+{
+	short mode;                       // FIFO模式；Linear模式
+	short dimension;                  // 1D,2D
+	short sourceMode;                 // 编码器、脉冲计数器
+	short sourceX;                    // X轴比较源
+	short sourceY;                    // Y轴比较源
+	short outputMode;                 // 输出模式：脉冲、电平
+	short outputCounter;              // 输出脉冲计数源
+	unsigned short outputPulseWidth;  // 输出脉冲宽度，电平模式无效
+	unsigned short errorBand;         // 二维位置比较输出误差带
+} TPosCompareMode;
+
+
+typedef struct
+{
+	short mode;                       // 0:时间模式，1：脉冲模式
+	unsigned short count;             // 输出个数
+	short highLevel;//脉冲模式下，无效电平持续时间，电平模式下指高电平持续时间
+	short lowLevel;//电平模式下，低电平持续时间，脉冲模式下无效
+	short resver[20];//保留
+} TPosCompareContinueMode;
+
+typedef struct
+{
+	unsigned long count;
+	unsigned short hso;
+	unsigned short gpo;
+
+	long startPos;
+	long interval;
+} TPosCompareLinear;
+
+typedef struct
+{
+	unsigned long count;
+	unsigned short hso;
+	unsigned short gpo;
+
+	long startPosX;
+	long startPosY;
+	long intervalX;
+	long intervalY;
+} TPosCompareLinear2D;
+
+typedef struct
+{
+	unsigned long count;
+	unsigned short hso;
+	unsigned short gpo;
+	long startPosX;
+	long startPosY;
+	long syncPos;
+	long time;
+	short reserve[20];
+} TPosComparePsoPrm;
+
+typedef struct
+{
+	long pos;
+	unsigned short hso;
+	unsigned short gpo;
+	unsigned long segmentNumber;
+} TPosCompareData;
+
+typedef struct
+{
+	long posX;
+	long posY;
+	unsigned short hso;
+	unsigned short gpo;
+	unsigned long segmentNumber;
+} TPosCompareData2D;
+
+typedef struct
+{
+	unsigned short mode;      // 0:FIFO模式；1：Linear模式
+	unsigned short run;
+	unsigned short space;
+	unsigned long pulseCount;
+	unsigned short hso;
+	unsigned short gpo;
+	unsigned long segmentNumber;
+} TPosCompareStatus;
+
+typedef struct
+{
+	unsigned short config;
+	unsigned short fifoEmpty;
+	unsigned short head;
+	unsigned short tail;
+	unsigned long commandReceive;
+	unsigned long commandSend;
+	long posX;
+	long posY;
+} TPosCompareInfo;
+
+
+typedef struct
+{
+	unsigned short config;
+	unsigned short fifoEmpty;
+	unsigned short head;
+	unsigned short tail;
+	unsigned long commandReceive;
+	unsigned long commandSend;
+	long posX;
+	long posY;
+	short sourceReverseX;
+	short sourceReverseY;
+	short reserve[12];
+} TPosCompareInfoEx;
+
+GT_API GT_SetPosCompareMode(short index,TPosCompareMode *pMode);
+GT_API GT_GetPosCompareMode(short index,TPosCompareMode *pMode);
+GT_API GT_PosCompareStart(short index);
+GT_API GT_PosCompareStop(short index);
+GT_API GT_PosCompareClear(short index);
+GT_API GT_PosCompareStatus(short index,TPosCompareStatus *pStatus);
+GT_API GT_PosCompareData(short index,TPosCompareData *pData);
+GT_API GT_PosCompareData2D(short index,TPosCompareData2D *pData);
+GT_API GT_SetPosCompareLinear(short index,TPosCompareLinear *pLinear);
+GT_API GT_GetPosCompareLinear(short index,TPosCompareLinear *pLinear);
+GT_API GT_SetPosCompareLinear2D(short index,TPosCompareLinear2D *pLinear);
+GT_API GT_GetPosCompareLinear2D(short index,TPosCompareLinear2D *pLinear);
+GT_API GT_SetPosComparePsoPrm(short index,TPosComparePsoPrm *pPrm);
+GT_API GT_GetPosComparePsoPrm(short index,TPosComparePsoPrm *pPrm);
+GT_API GT_SetPosCompareContinueMode(short index,TPosCompareContinueMode *pMode);
+GT_API GT_GetPosCompareContinueMode(short index,TPosCompareContinueMode *pMode);
+GT_API GT_PosCompareInfo(short index,TPosCompareInfo *pInfo);
+GT_API GT_PosCompareInfoEx(short index,TPosCompareInfoEx *pInfo);
+GT_API GT_PosCompareSpace(short index,unsigned short *pSpace);
+GT_API GT_SetPosCompareStartLevel(short index,short type,short startLevel);
+GT_API GT_PosComparePulse(short index,short outputMode,short level,unsigned short outputPulseWidth);
+GT_API GT_PosComapreContinuePusleMode(short index,short mode,short count,unsigned short pulseLowerWidth);
+GT_API GT_BufPosCompareStart(short crd,short fifo,short index);
+GT_API GT_BufPosCompareStop(short crd,short fifo,short index);
+GT_API GT_BufPosComparePsoPrm(short crd,short index,TPosComparePsoPrm *pPrm,short fifo);
+GT_API GT_BufSetComparePort(short crd,short fifo,short channel,short hsio0,short hsio1);
+
+
+GT_API GT_SelectLaserDisTable(short channel,short index);
+GT_API GT_GetCurrentLaserDisTable(short channel,short *pIndex);
+GT_API GT_BufSetLaserDisEnable(short crd,short fifo,short channel,short enable);
+GT_API GT_BufSelectLaserDisTable(short crd,short fifo,short channel,short index);
+
+GT_API GT_SetFlagVar(short index,short mode,short value);
+GT_API GT_GetFlagVar(short index,short *pMode,short *pValue);
+
+
+//////////////////////////////////////////////////////////////////////////
+//手摇杆——兆丰
+//////////////////////////////////////////////////////////////////////////
+#define  MC_JOYSTICK_AXIS_COUNT_MAX 3//摇杆最大轴数
+#define  MC_JOYSTICK_VEL_COUNT_MAX 3//速度最大阶数
+
+typedef struct
+{
+	long scale[MC_JOYSTICK_AXIS_COUNT_MAX];//脉冲当量：pulse/mm
+	double motionAcc[MC_JOYSTICK_AXIS_COUNT_MAX];//加速度： mm/s^2
+	double motionDec[MC_JOYSTICK_AXIS_COUNT_MAX];//减速度： mm/s^2
+	double motionSmooth[MC_JOYSTICK_AXIS_COUNT_MAX];//平滑系数： 0——1
+}TJoystickMoitonPrm;
+
+typedef struct
+{
+	double xMotionVel[MC_JOYSTICK_VEL_COUNT_MAX];//X速度：mm/s
+	double yMotionVel[MC_JOYSTICK_VEL_COUNT_MAX];//Y速度：mm/s
+	double zMotionVel[MC_JOYSTICK_VEL_COUNT_MAX];//Z速度：mm/s
+}TJoystickMoitonVel;
+
+
+typedef struct
+{
+	long thresholdValue[MC_JOYSTICK_AXIS_COUNT_MAX];//摇杆阈值
+	long joystickMaxValue[MC_JOYSTICK_AXIS_COUNT_MAX];//最大值
+	long joystickMedianValue[MC_JOYSTICK_AXIS_COUNT_MAX];//中间值
+	long joystickMinValue[MC_JOYSTICK_AXIS_COUNT_MAX];//最小值
+}TJoystickCriticalValue;
+
+typedef struct
+{
+	long baudRate;
+	short byteSize;
+	short parity;
+	short stopBits;
+	short reserve;
+}TSericalPortPrm;
+
+GT_API GT_SetJoystickMapAxis(short joystickIndex,short *axis);
+GT_API GT_GetJoystickMapAxis(short joystickIndex,short *pAxis);
+
+GT_API GT_JoystickEnable(short joystickIndex,short enable);//mode  0:禁用，1：启用
+
+GT_API GT_SetJoystickSericalPortPrm(short joystickIndex,TSericalPortPrm *sericalPortPrm);
+GT_API GT_GetJoystickSericalPortPrm(short joystickIndex,TSericalPortPrm *pSericalPortPrm);
+
+GT_API GT_SetJoystickSendDataPacket(short joystickIndex,short *dataPacket,short dataCount);
+GT_API GT_GetJoystickSendDataPacket(short joystickIndex,short *pDataPacket,short *pDataCount);
+
+GT_API GT_JoystickCheckEnable(short joystickIndex,short checkEnable);//checkEnable  0:使能校验，1：校验关闭
+GT_API GT_GetJoystickSts(short joystickIndex,long *pSts);//pSts  bit0:摇杆状态（0:禁用，1：启用），bit1：摇杆校验状态（ 0:使能校验，1：校验关闭）
+GT_API GT_GetJoystickValue(short joystickIndex,long *pValue);
+GT_API GT_SetJoystickMotionPrm(short joystickIndex,TJoystickMoitonPrm *joystickMotionPrm);
+GT_API GT_GetJoystickMotionPrm(short joystickIndex,TJoystickMoitonPrm *pJoystickMotionPrm);
+GT_API GT_SetJoystickMotionVel(short joystickIndex,TJoystickMoitonVel *joystickMotionVel);
+GT_API GT_GetJoystickMotionVel(short joystickIndex,TJoystickMoitonVel *joystickMotionVel);
+GT_API GT_SetJoystickCriticalValue(short joystickIndex,TJoystickCriticalValue *joystickCriticalValue);
+GT_API GT_GetJoystickCriticalValue(short joystickIndex,TJoystickCriticalValue *pJoystickCriticalValue);
+
+GT_API GT_JoystickReset(short joystickIndex);
+
+
+GT_API GT_SetDisplayDip(short mode);
+GT_API GT_GetDisplayDip(short *pMode);
+
+GT_API GT_Buf2DCompareData(short crd,short fifo,short chn,T2DCompareData data,short compareFifo);
+GT_API GT_2DCompareSetHoldTime(short chn,short time);
+GT_API GT_2DCompareGetHoldTimeStatus(short chn,short *pTime,short *pSts);
+
+GT_API GT_SetLaserFollowTable(short tableId,long n,double *pVel,double *pPower,short channel);
+GT_API GT_GetLaserFollowTable(short tableId,long n,double *pVel,double *pPower,long *pCount,short channel);
+GT_API GT_BufLaserFollowTable(short crd,short tableId,double minPower,double maxPower,short fifo=0,short channel=0);
+
+GT_API GT_BufStop(short crd,long mask,long option,short fifo=0);
+GT_API GT_BufMoveJog(short crd,short moveAxis,double vel,double acc,short modal,short fifo=0);
+
+GT_API GT_GetCardInfo(short *pCardNum,short *pCardType);
+
+GT_API GT_SetDeviceShareMax(short count);
+
+GT_API GT_Buf2DComparePulse(short crd,short fifo,short chn,short level,short outputType,short time);
+
+GT_API GT_CrdEnableVariableCircle(short crd,short fifo);
+GT_API GT_CrdDisableVariableCircle(short crd,short fifo);

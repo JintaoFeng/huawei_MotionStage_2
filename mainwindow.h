@@ -4,6 +4,10 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QListWidgetItem>
+#include "axis.h"
+#include <QTableWidget>
+#include <QList>
+#include "table.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -17,17 +21,60 @@ public:
     ~MainWindow();
 public slots:
     void ShowTime();
+    void CommandHandler(QString command, int value);
 private slots:
-
-    void on_tabWidget_tabBarClicked(int index);
 
     void on_tabWidget_customContextMenuRequested(const QPoint &pos);
 
     void AddTab();
     void DeleteTab();
 
+    void AddPoint();
+    void DeletePoint();
+
+    void on_connectBtn_clicked();
+
+    void on_enableAllBtn_clicked();
+
+    void on_killStopBtn_clicked();
+
+    void on_closeBtn_clicked();
+
+    void on_setBtn_clicked();
+
+    void on_moveBtn_clicked();
+
+    void on_saveBtn_clicked();
+
+    void on_loadBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
     QTimer *timer;
+    axis* axi1;
+    axis* axi2;
+    axis* axi3;
+
+    int retValue;
+    axis* axis1;
+    axis* axis2;
+    axis* axis3;
+    long axisStatus1;
+    long axisStatus2;
+    long axisStatus3;
+    QThread *homeThread1;
+    QThread *homeThread2;
+    QThread *homeThread3;
+
+    QList<table*> tabWid;
+
+//    Home *home1;
+//    Home *home2;
+//    Home *home3;
+
+signals:
+    void updateStart();
+    void updateTerm();
+    void setPoint(QVector<double> point);
 };
 #endif // MAINWINDOW_H
