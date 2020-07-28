@@ -70,6 +70,9 @@ axis::axis(QWidget *parent,QString name) :
     ui->gridLayout_5->addWidget(killStopBtn,2,1);
 
     ui->titleLabel->setText(name);
+
+  //  this->positiveLimitBtn->setBlue();
+ //   this->negativeLimitBtn->setRed();
 }
 
 axis::~axis()
@@ -625,7 +628,7 @@ void axis::on_negitiveMoveBtn_clicked()
         retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
         commandHandle("axis3 setVel",retValue);
         GT_GetPrfPos(3,&pPos);
-        pPos-=ui->posEdit->text().toDouble()*1000;
+        pPos-= ui->posEdit->text().toDouble()*1000;
         GT_SetPos(3,(long)pPos);
         GT_Update(1<<2);
      //   emit realtive(3,pPos,ui->posEdit->text().toDouble()*1000,1);

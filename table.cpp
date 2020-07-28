@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QMessageBox>
+#include <QInputDialog>
 table::table(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::table)
@@ -35,8 +36,18 @@ table::~table()
 void table::AddPoint()
 {
     int a=ui->tableWidget->rowCount();
+    QList<QString> Vheaders;
+    bool ok=false;
+    QString text = QInputDialog::getText(this,"INPUT","请输入点位名称",QLineEdit::Normal,"点位",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
     ui->tableWidget->setRowCount(a+1);
- //   qDebug()<<ui->tableWidget->currentRow()<<endl;
+    for(int i=0;i<a;i++)
+    {
+        Vheaders<<ui->tableWidget->verticalHeaderItem(i)->text();
+    }
+    Vheaders<<text;
+
+    ui->tableWidget->setVerticalHeaderLabels(Vheaders);
+    //   qDebug()<<ui->tableWidget->currentRow()<<endl;
   //  qDebug()<<this<<endl;
 }
 void table::DeletePoint()
