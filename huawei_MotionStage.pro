@@ -35,7 +35,8 @@ FORMS += \
     table.ui
 
 RC_ICONS = Resources/logo.ico
-
+LIBS += -lDbgHelp
+#QMAKE_LFLAGS_RELEASE = /INCREMENTAL:NO /DEBUG
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

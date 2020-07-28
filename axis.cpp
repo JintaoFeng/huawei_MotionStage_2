@@ -214,8 +214,8 @@ void axis::timerOut()
 //    ui->prfPosText->setText(QString("%1").arg(prfPos,3,'f',1));
 //    ui->prfVelText->setText(QString("%1").arg(prfVel,3,'f',1));
 //    ui->prfAccText->setText(QString("%1").arg(prfAcc,3,'f',1));
-    ui->posLabel->setText(QString("%1").arg(prfPos/1000,3,'f',1));
-    ui->posSlider->setSliderPosition((int)(prfPos/1000));
+    ui->posLabel->setText(QString("%1").arg(prfPos/1000.0,3,'f',1));
+    ui->posSlider->setSliderPosition((int)(prfPos/1000.0));
     if(axisStatus&0x02)
     {
         this->alarmBtn->setRed();
@@ -432,7 +432,6 @@ void axis::on_homeBtn_clicked()
     connect(home,&Home::destroyed,homeThread,&QThread::deleteLater);
     connect(home,&Home::workFinished,[this](){
         homeThread->quit();
-   //     homeThread->wait();
     });
     homeThread->start();
     if(objectName()=="Axis1")
@@ -455,22 +454,21 @@ void axis::on_homeBtn_clicked()
 
 void axis::on_positiveMoveBtn_clicked()
 {
-    realtiveThread=new QThread;
-    realtiveMove=new RealtiveMove;
-    realtiveMove->moveToThread(realtiveThread);
+//    realtiveThread=new QThread;
+//    realtiveMove=new RealtiveMove;
+//    realtiveMove->moveToThread(realtiveThread);
 
-    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
+//    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
 
-    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
-    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
+//    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
+//    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
 
-    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
-//    connect(realtiveThread,&QThread::destroyed,this,&axis::absoluteThreadFinished);
+//    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
 
-    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
-        realtiveThread->quit();
-    });
-    realtiveThread->start();
+//    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
+//        realtiveThread->quit();
+//    });
+//    realtiveThread->start();
 
     if(objectName()=="Axis1")
     {
@@ -482,9 +480,13 @@ void axis::on_positiveMoveBtn_clicked()
         GT_SetTrapPrm(1,&trapPrm);
         retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
         commandHandle("axis1 setVel",retValue);
-        GT_GetPos(1,&pPos);
+        GT_GetPrfPos(1,&pPos);
 
-        emit realtive(1,pPos,ui->posEdit->text().toInt()*1000,0);
+        pPos+=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(1,(long)pPos);
+        GT_Update(1);
+
+   //     emit realtive(1,pPos,ui->posEdit->text().toDouble()*1000,0);
     }
     else if(objectName()=="Axis2")
     {
@@ -496,9 +498,11 @@ void axis::on_positiveMoveBtn_clicked()
         GT_SetTrapPrm(2,&trapPrm);
         retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
         commandHandle("axis2 setVel",retValue);
-        GT_GetPos(2,&pPos);
-
-        emit realtive(2,pPos,ui->posEdit->text().toInt()*1000,0);
+        GT_GetPrfPos(2,&pPos);
+        pPos+=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(2,(long)pPos);
+        GT_Update(1<<1);
+ //       emit realtive(2,pPos,ui->posEdit->text().toDouble()*1000,0);
     }
     else if(objectName()=="Axis3")
     {
@@ -510,8 +514,11 @@ void axis::on_positiveMoveBtn_clicked()
         GT_SetTrapPrm(3,&trapPrm);
         retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
         commandHandle("axis3 setVel",retValue);
-        GT_GetPos(3,&pPos);
-        emit realtive(3,pPos,ui->posEdit->text().toInt()*1000,0);
+        GT_GetPrfPos(3,&pPos);
+        pPos+=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(3,(long)pPos);
+        GT_Update(1<<2);
+  //      emit realtive(3,pPos,ui->posEdit->text().toDouble()*1000,0);
     }
     else if(objectName()==nullptr)
     {
@@ -520,24 +527,22 @@ void axis::on_positiveMoveBtn_clicked()
 }
 
 
-void RealtiveMove::doWorks(short profile,int start,int end,int rep)
+void RealtiveMove::doWorks(short profile,double start,double end,int rep)
 {
     long mask=long(1<<(profile-1));
     if(!rep)
     {
         start+=end;
     }
-
     else
     {
         start-=end;
     }
-
-    GT_SetPos(profile,start);
+ //   qDebug()<<start<<endl;
+    GT_SetPos(profile,(long)start);
     GT_Update(mask);
     do
     {
-        QThread::msleep(1);
         if(m_stop)
         {
             m_stop=0;
@@ -561,22 +566,21 @@ RealtiveMove::RealtiveMove(QObject *parent):QObject(parent)
 
 void axis::on_negitiveMoveBtn_clicked()
 {
-    realtiveThread=new QThread;
-    realtiveMove=new RealtiveMove;
-    realtiveMove->moveToThread(realtiveThread);
+//    realtiveThread=new QThread;
+//    realtiveMove=new RealtiveMove;
+//    realtiveMove->moveToThread(realtiveThread);
 
-    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
+//    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
 
-    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
-    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
+//    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
+//    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
 
-    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
-//    connect(realtiveThread,&QThread::destroyed,this,&axis::absoluteThreadFinished);
+//    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
 
-    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
-        realtiveThread->quit();
-    });
-    realtiveThread->start();
+//    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
+//        realtiveThread->quit();
+//    });
+//    realtiveThread->start();
 
     if(objectName()=="Axis1")
     {
@@ -588,9 +592,11 @@ void axis::on_negitiveMoveBtn_clicked()
         GT_SetTrapPrm(1,&trapPrm);
         retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
         commandHandle("axis1 setVel",retValue);
-        GT_GetPos(1,&pPos);
-
-        emit realtive(1,pPos,ui->posEdit->text().toInt()*1000,1);
+        GT_GetPrfPos(1,&pPos);
+        pPos-=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(1,(long)pPos);
+        GT_Update(1);
+    //    emit realtive(1,pPos,ui->posEdit->text().toDouble()*1000,1);
     }
     else if(objectName()=="Axis2")
     {
@@ -602,9 +608,11 @@ void axis::on_negitiveMoveBtn_clicked()
         GT_SetTrapPrm(2,&trapPrm);
         retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
         commandHandle("axis2 setVel",retValue);
-        GT_GetPos(2,&pPos);
-
-        emit realtive(2,pPos,ui->posEdit->text().toInt()*1000,1);
+        GT_GetPrfPos(2,&pPos);
+        pPos-=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(2,(long)pPos);
+        GT_Update(1<<1);
+     //   emit realtive(2,pPos,ui->posEdit->text().toDouble()*1000,1);
     }
     else if(objectName()=="Axis3")
     {
@@ -616,8 +624,11 @@ void axis::on_negitiveMoveBtn_clicked()
         GT_SetTrapPrm(3,&trapPrm);
         retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
         commandHandle("axis3 setVel",retValue);
-        GT_GetPos(3,&pPos);
-        emit realtive(3,pPos,ui->posEdit->text().toInt()*1000,1);
+        GT_GetPrfPos(3,&pPos);
+        pPos-=ui->posEdit->text().toDouble()*1000;
+        GT_SetPos(3,(long)pPos);
+        GT_Update(1<<2);
+     //   emit realtive(3,pPos,ui->posEdit->text().toDouble()*1000,1);
     }
     else if(objectName()==nullptr)
     {
@@ -632,24 +643,24 @@ void axis::absoluteThreadFinished()
 //    qDebug()<<absoluteMove<<absoluteThread<<endl;
 }
 
-void axis::Move(QVector<int> pos)
+void axis::Move(QVector<double> pos)
 {
-    absoluteThread=new QThread(nullptr);
-    absoluteMove=new AbsoluteMove;
-    absoluteMove->moveToThread(absoluteThread);
+//    absoluteThread=new QThread(nullptr);
+//    absoluteMove=new AbsoluteMove;
+//    absoluteMove->moveToThread(absoluteThread);
 
-    connect(this,&axis::absolute,absoluteMove,&AbsoluteMove::doWorks);
+//    connect(this,&axis::absolute,absoluteMove,&AbsoluteMove::doWorks);
 
-    connect(absoluteThread,&QThread::finished,absoluteMove,&QObject::deleteLater);
-    connect(absoluteMove,&AbsoluteMove::destroyed,absoluteThread,&QThread::deleteLater);
+//    connect(absoluteThread,&QThread::finished,absoluteMove,&QObject::deleteLater);
+//    connect(absoluteMove,&AbsoluteMove::destroyed,absoluteThread,&QThread::deleteLater);
 
-    connect(this,&axis::moveStop,absoluteMove,&AbsoluteMove::moveStop,Qt::DirectConnection);
-    connect(absoluteThread,&QThread::destroyed,this,&axis::absoluteThreadFinished);
+//    connect(this,&axis::moveStop,absoluteMove,&AbsoluteMove::moveStop,Qt::DirectConnection);
+//    connect(absoluteThread,&QThread::destroyed,this,&axis::absoluteThreadFinished);
 
-    connect(absoluteMove,&AbsoluteMove::workFinshed,[this](){
-        absoluteThread->quit();
-    });
-    absoluteThread->start();
+//    connect(absoluteMove,&AbsoluteMove::workFinshed,[this](){
+//        absoluteThread->quit();
+//    });
+//    absoluteThread->start();
 
     if(objectName()=="Axis1")
     {
@@ -661,7 +672,9 @@ void axis::Move(QVector<int> pos)
         GT_SetTrapPrm(1,&trapPrm);
         retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
         commandHandle("axis1 setVel",retValue);
-        emit absolute(1,0,pos.at(0),0);
+        GT_SetPos(1,(long)pos.at(0));
+        GT_Update(1);
+     //   emit absolute(1,0,pos.at(0),0);
     }
     else if(objectName()=="Axis2")
     {
@@ -673,7 +686,10 @@ void axis::Move(QVector<int> pos)
         GT_SetTrapPrm(2,&trapPrm);
         retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
         commandHandle("axis2 setVel",retValue);
-        emit absolute(2,0,pos.at(0),0);
+        GT_SetPos(2,(long)pos.at(1));
+        GT_Update(1<<1);
+
+   //     emit absolute(2,0,pos.at(1),0);
     }
     else if(objectName()=="Axis3")
     {
@@ -685,7 +701,9 @@ void axis::Move(QVector<int> pos)
         GT_SetTrapPrm(3,&trapPrm);
         retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
         commandHandle("axis3 setVel",retValue);
-        emit absolute(3,0,pos.at(0),0);
+        GT_SetPos(3,(long)pos.at(2));
+        GT_Update(1<<2);
+     //   emit absolute(3,0,pos.at(2),0);
     }
     else if(objectName()==nullptr)
     {
@@ -701,11 +719,11 @@ AbsoluteMove::AbsoluteMove(QObject* parent):QObject(parent),m_stop(0)
 
 }
 
-void AbsoluteMove::doWorks(short profile,int start,int end,int rep)
+void AbsoluteMove::doWorks(short profile,double start,double end,int rep)
 {
     long mask=long(1<<(profile-1));
 
-    GT_SetPos(profile,end);
+    GT_SetPos(profile,(long)end);
     GT_Update(mask);
     do
     {
@@ -726,3 +744,5 @@ void AbsoluteMove::moveStop()
 {
     m_stop=1;
 }
+
+

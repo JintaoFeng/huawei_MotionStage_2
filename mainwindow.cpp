@@ -20,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->imageLabel->setPixmap(QPixmap::fromImage(image));
     ui->imageLabel->setGeometry(0,0,image.width(),image.height());
 
+ //   this->s
+
     QTimer *timer=new QTimer;
     connect(timer,&QTimer::timeout,this,&MainWindow::ShowTime);
     ui->timeNumber->setDigitCount(8);
@@ -142,7 +144,7 @@ void MainWindow::on_connectBtn_clicked()
     {
         emit updateStart();
     }
-    QString str= "..\\huawei_MotionStage\\GTS800.cfg";
+    QString str= "GTS800.cfg";
     QByteArray temp=str.toLatin1();
     char* file=temp.data();
     retValue=GT_LoadConfig(file);
@@ -219,13 +221,14 @@ void MainWindow::on_setBtn_clicked()
 {
     QVector<double> pos;
     double prfPos;
-    GT_GetAxisPrfPos(1,&prfPos);
+    GT_GetPrfPos(1,&prfPos);
     pos<<prfPos;
-    GT_GetAxisPrfPos(2,&prfPos);
+    GT_GetPrfPos(2,&prfPos);
     pos<<prfPos;
-    GT_GetAxisPrfPos(3,&prfPos);
+    GT_GetPrfPos(3,&prfPos);
     pos<<prfPos;
- //   pos<<12<<0.23<<0.235;
+  //  pos.clear();
+  //  pos<<1200<<23000<<235;
     int cur=ui->tabWidget->currentIndex();
     tabWid.at(cur)->setPoint(pos);
 }
@@ -233,14 +236,13 @@ void MainWindow::on_setBtn_clicked()
 void MainWindow::on_moveBtn_clicked()
 {
     QVector<double> pos;
-    QVector<int> pos1;
     int cur=ui->tabWidget->currentIndex();
     pos=tabWid.at(cur)->getPoint();
-    qDebug()<<pos<<endl;
+ //   qDebug()<<pos<<endl;
     if(!pos.isEmpty())
     {
-        pos1<<(int)(pos.at(0)*1000)<<(int)(pos.at(1)*1000)<<(int)(pos.at(2)*1000);
-        emit move(pos1);
+   //     pos1<<(int)(pos.at(0))<<(int)(pos.at(1))<<(int)(pos.at(2));
+        emit move(pos);
     }
     else
     {

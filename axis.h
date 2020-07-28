@@ -25,7 +25,7 @@ public:
 public slots:
     void updateStart();
     void updateTerm();
-    void Move(QVector<int> pos);
+    void Move(QVector<double> pos);
     void absoluteThreadFinished();
 
 private slots:
@@ -72,7 +72,7 @@ private:
     double prfPos;
     double prfVel;
     double prfAcc;
-    long pPos;
+    double pPos;
     TJogPrm jogPrm;
     TTrapPrm trapPrm;
     long axisStatus;
@@ -88,8 +88,8 @@ private:
 
 signals:
     void commandHandle(QString command,int value);
-    void absolute(short profile,int start,int end,int rep);
-    void realtive(short profile,int start,int end,int rep);
+    void absolute(short profile,double start,double end,int rep);
+    void realtive(short profile,double start,double end,int rep);
     void moveStop();
     void sHome(int axis);
 
@@ -126,7 +126,7 @@ public:
 
     }
 public slots:
-    void doWorks(short profile,int start,int end,int rep);
+    void doWorks(short profile,double start,double end,int rep);
     void moveStop();
 
 signals:
@@ -147,7 +147,7 @@ public:
 
     }
 public slots:
-    void doWorks(short profile,int start,int end,int rep);
+    void doWorks(short profile,double start,double end,int rep);
     void moveStop();
 
 signals:

@@ -31,7 +31,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+  <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
    <item>
     <widget class="QFrame" name="frame">
      <property name="frameShape">
@@ -388,7 +388,7 @@
            </font>
           </property>
           <property name="text">
-           <string>0</string>
+           <string>10</string>
           </property>
          </widget>
         </item>
@@ -418,7 +418,7 @@
            </font>
           </property>
           <property name="text">
-           <string>0</string>
+           <string>10</string>
           </property>
          </widget>
         </item>
@@ -489,7 +489,7 @@
            </font>
           </property>
           <property name="text">
-           <string>0</string>
+           <string>10</string>
           </property>
          </widget>
         </item>
