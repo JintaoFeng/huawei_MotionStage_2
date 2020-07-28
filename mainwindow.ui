@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1400</width>
-    <height>750</height>
+    <height>800</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
   <property name="maximumSize">
    <size>
     <width>1400</width>
-    <height>750</height>
+    <height>800</height>
    </size>
   </property>
   <property name="mouseTracking">
@@ -53,7 +53,7 @@
      <height>750</height>
     </size>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6,0">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3,1,1">
       <item>
@@ -314,7 +314,7 @@
             </font>
            </property>
            <property name="text">
-            <string>SET POINT</string>
+            <string>SET</string>
            </property>
           </widget>
          </item>
@@ -413,6 +413,13 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QScrollBar" name="horizontalScrollBar">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

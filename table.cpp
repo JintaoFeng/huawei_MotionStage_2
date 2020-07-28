@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QTextEdit>
+#include <QMessageBox>
 table::table(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::table)
@@ -47,23 +48,39 @@ void table::DeletePoint()
 void table::setPoint(QVector<double> &point)
 {
     QTableWidgetItem item;
-    ui->tableWidget->setItem(ui->tableWidget->currentRow(),0,new QTableWidgetItem(QString::number(point.at(0))));
-    ui->tableWidget->setItem(ui->tableWidget->currentRow(),1,new QTableWidgetItem(QString::number(point.at(1))));
-    ui->tableWidget->setItem(ui->tableWidget->currentRow(),2,new QTableWidgetItem(QString::number(point.at(2))));
+    int cur=ui->tableWidget->currentRow();
+    if(cur>=0)
+    {
+        ui->tableWidget->setItem(cur,0,new QTableWidgetItem(QString::number(point.at(0))));
+        ui->tableWidget->setItem(cur,1,new QTableWidgetItem(QString::number(point.at(1))));
+        ui->tableWidget->setItem(cur,2,new QTableWidgetItem(QString::number(point.at(2))));
+    }
+    else
+    {
+        QMessageBox::warning(this,"Warning","请选择相应的位置！");
+    }
 }
 QVector<double> table::getPoint()
 {
     QVector<double> pos;
     int cur=ui->tableWidget->currentRow();
-    pos<<ui->tableWidget->item(cur,0)->text().toDouble();
-    pos<<ui->tableWidget->item(cur,1)->text().toDouble();
-    pos<<ui->tableWidget->item(cur,2)->text().toDouble();
+    if(cur>=0)
+    {
+        pos<<ui->tableWidget->item(cur,0)->text().toDouble();
+        pos<<ui->tableWidget->item(cur,1)->text().toDouble();
+        pos<<ui->tableWidget->item(cur,2)->text().toDouble();
+    }
+    else
+    {
+        QMessageBox::warning(this,"Warning","请选择相应的位置！");
+        pos<<0<<0<<0;
+    }
     return pos;
 }
 void table::save()
 {
     QString filepath = QFileDialog::getSaveFileName(this, tr("Save as..."),
-            "..//hauwei_MotionStage", tr("EXCEL files (*.xls);;HTML-Files (*.txt);;"));
+            "//", tr("EXCEL files (*.xls);;HTML-Files (*.txt);;"));
     if (filepath != "")
     {
         int row = ui->tableWidget->rowCount();
@@ -102,16 +119,13 @@ void table::save()
             ts << textEdit.document()->toPlainText();
             file.close();
         }
-        //导出后将表格情况，这一步大家自己选择要不要
-   //     ui->tableWidget->clearContents();
-   //     ui->tableWidget->setRowCount(0);
     }
 
 }
 void table::load()
 {
     QString filepath = QFileDialog::getOpenFileName(this, tr("Save as..."),
-            "..//hauwei_MotionStage", tr("EXCEL files (*.xls);;HTML-Files (*.txt);;"));
+            "//", tr("EXCEL files (*.xls);;HTML-Files (*.txt);;"));
     if(filepath!="")
     {
         QFile file(filepath);
@@ -119,23 +133,27 @@ void table::load()
         {
             QTextStream ts(&file);
             ts.setCodec("utf-8");//这个地方大家自己判断是否用“utf-8”
-        //    ts << textEdit.document()->toPlainText();
             QString str=ts.readAll();
             QStringList strList=str.split("\n");
-            QDataStream data;
+            int i=0;
+            int j=0;
             if(!strList.isEmpty())
             {
-                QStringListIterator it(strList);
-                while (it.hasNext()) {
-              //      qDebug()<<it.next()<<endl;
-                    it.next();
-                    QString str1=it.next();
-                    str1.split("\t");
+                ui->tableWidget->clearContents();
+                ui->tableWidget->setRowCount(1);
+                ui->tableWidget->setRowCount(strList.count()-1);
+       //        qDebug()<<strList.count()<<endl;
+                for(i=1;i<strList.count();i++)
+                {
+                    QStringList strList1=strList.at(i).split("\t");
+                    for(j=0;j<strList1.count()-1;j++)
+                    {
+                        ui->tableWidget->setItem(i-1,j,new QTableWidgetItem(strList1.at(j)));
+             //           qDebug()<<strList1.at(j)<<endl;
+                    }
                 }
-
             }
 
-     //       <<strList.<<endl;
             file.close();
         }
     }

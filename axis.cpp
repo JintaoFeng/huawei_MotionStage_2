@@ -28,8 +28,6 @@ axis::axis(QWidget *parent,QString name) :
         ui->positiveLabel->setText(QString::number(100));
         ui->posSlider->setMaximum(100);
     }
-
-
     alarmBtn=new LightButton;
     positiveLimitBtn=new LightButton;
     negativeLimitBtn=new LightButton;
@@ -54,6 +52,9 @@ axis::axis(QWidget *parent,QString name) :
     moveErrorLabel->setText("运动错误");
     moveStatusLabel->setText("运动状态");
     killStopLabel->setText("急停输入");
+ //   QFont font()
+  //  alarmLabel->setFont()
+
     ui->gridLayout_6->addWidget(negativeLimitBtn,0,0);
     ui->gridLayout_6->addWidget(positiveLimitBtn,0,2);
     ui->gridLayout_5->addWidget(alarmLabel,0,0);
@@ -74,6 +75,21 @@ axis::axis(QWidget *parent,QString name) :
 axis::~axis()
 {
     delete ui;
+    delete alarmBtn;
+    delete positiveLimitBtn;
+    delete negativeLimitBtn;
+    delete enableBtn2;
+    delete moveErrorBtn;
+    delete moveStatusBtn;
+    delete alarmLabel;
+    delete positiveLimitLabel;
+    delete negativeLimitLabel;
+    delete enableLabel;
+    delete moveErrorLabel;
+    delete moveStatusLabel;
+    delete killStopLabel;
+    delete killStopBtn;
+    delete timer;
 }
 
 void axis::on_enableBtn_clicked()
@@ -351,8 +367,7 @@ Home::Home(QObject* parent):QObject(parent)
 
 }
 void Home::doWorks(short axis)
-{
-    int retValue;
+{   int retValue;
     static QMutex mutex;
     retValue=1;
 //    QMutexLocker locker(&mutex);
@@ -466,7 +481,7 @@ void axis::on_positiveMoveBtn_clicked()
         GT_PrfTrap(1);
         GT_SetTrapPrm(1,&trapPrm);
         retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
-  //      commandHandle("axis1 setVel",retValue);
+        commandHandle("axis1 setVel",retValue);
         GT_GetPos(1,&pPos);
 
         emit realtive(1,pPos,ui->posEdit->text().toInt()*1000,0);
@@ -572,7 +587,7 @@ void axis::on_negitiveMoveBtn_clicked()
         GT_PrfTrap(1);
         GT_SetTrapPrm(1,&trapPrm);
         retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
-  //      commandHandle("axis1 setVel",retValue);
+        commandHandle("axis1 setVel",retValue);
         GT_GetPos(1,&pPos);
 
         emit realtive(1,pPos,ui->posEdit->text().toInt()*1000,1);
@@ -608,4 +623,106 @@ void axis::on_negitiveMoveBtn_clicked()
     {
         return;
     }
+}
+
+void axis::absoluteThreadFinished()
+{
+    absoluteMove=nullptr;
+    absoluteThread=nullptr;
+//    qDebug()<<absoluteMove<<absoluteThread<<endl;
+}
+
+void axis::Move(QVector<int> pos)
+{
+    absoluteThread=new QThread(nullptr);
+    absoluteMove=new AbsoluteMove;
+    absoluteMove->moveToThread(absoluteThread);
+
+    connect(this,&axis::absolute,absoluteMove,&AbsoluteMove::doWorks);
+
+    connect(absoluteThread,&QThread::finished,absoluteMove,&QObject::deleteLater);
+    connect(absoluteMove,&AbsoluteMove::destroyed,absoluteThread,&QThread::deleteLater);
+
+    connect(this,&axis::moveStop,absoluteMove,&AbsoluteMove::moveStop,Qt::DirectConnection);
+    connect(absoluteThread,&QThread::destroyed,this,&axis::absoluteThreadFinished);
+
+    connect(absoluteMove,&AbsoluteMove::workFinshed,[this](){
+        absoluteThread->quit();
+    });
+    absoluteThread->start();
+
+    if(objectName()=="Axis1")
+    {
+        GT_GetTrapPrm(1,&trapPrm);
+        trapPrm.acc=ui->accEdit->text().toDouble();
+        trapPrm.dec=ui->accEdit->text().toDouble();
+        trapPrm.smoothTime=49;
+        GT_PrfTrap(1);
+        GT_SetTrapPrm(1,&trapPrm);
+        retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
+        commandHandle("axis1 setVel",retValue);
+        emit absolute(1,0,pos.at(0),0);
+    }
+    else if(objectName()=="Axis2")
+    {
+        GT_GetTrapPrm(2,&trapPrm);
+        trapPrm.acc=ui->accEdit->text().toDouble();
+        trapPrm.dec=ui->accEdit->text().toDouble();
+        trapPrm.smoothTime=49;
+        GT_PrfTrap(2);
+        GT_SetTrapPrm(2,&trapPrm);
+        retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
+        commandHandle("axis2 setVel",retValue);
+        emit absolute(2,0,pos.at(0),0);
+    }
+    else if(objectName()=="Axis3")
+    {
+        GT_GetTrapPrm(3,&trapPrm);
+        trapPrm.acc=ui->accEdit->text().toDouble();
+        trapPrm.dec=ui->accEdit->text().toDouble();
+        trapPrm.smoothTime=49;
+        GT_PrfTrap(3);
+        GT_SetTrapPrm(3,&trapPrm);
+        retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
+        commandHandle("axis3 setVel",retValue);
+        emit absolute(3,0,pos.at(0),0);
+    }
+    else if(objectName()==nullptr)
+    {
+        return;
+    }
+
+}
+
+
+
+AbsoluteMove::AbsoluteMove(QObject* parent):QObject(parent),m_stop(0)
+{
+
+}
+
+void AbsoluteMove::doWorks(short profile,int start,int end,int rep)
+{
+    long mask=long(1<<(profile-1));
+
+    GT_SetPos(profile,end);
+    GT_Update(mask);
+    do
+    {
+        if(m_stop)
+        {
+            m_stop=0;
+            GT_Stop(profile,1);
+            break;
+        }
+        GT_GetSts(profile,&axisState);
+    }while(axisState&0x400);
+
+    emit workFinshed();
+}
+
+
+void AbsoluteMove::moveStop()
+{
+    m_stop=1;
 }

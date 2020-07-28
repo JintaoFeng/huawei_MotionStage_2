@@ -76,5 +76,6 @@ signals:
     void updateStart();
     void updateTerm();
     void setPoint(QVector<double> point);
+    void move(QVector<int> pos);
 };
 #endif // MAINWINDOW_H

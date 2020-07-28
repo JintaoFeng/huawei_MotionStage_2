@@ -13,6 +13,7 @@ class axis;
 }
 class Home;
 class RealtiveMove;
+class AbsoluteMove;
 class axis : public QWidget
 {
     Q_OBJECT
@@ -24,7 +25,8 @@ public:
 public slots:
     void updateStart();
     void updateTerm();
-
+    void Move(QVector<int> pos);
+    void absoluteThreadFinished();
 
 private slots:
     void on_enableBtn_clicked();
@@ -81,6 +83,9 @@ private:
     RealtiveMove *realtiveMove;
     QThread *realtiveThread;
 
+    QThread* absoluteThread;
+    AbsoluteMove* absoluteMove;
+
 signals:
     void commandHandle(QString command,int value);
     void absolute(short profile,int start,int end,int rep);
@@ -132,4 +137,26 @@ private:
     long axisState;
     int m_stop;
 };
+
+class AbsoluteMove:public QObject
+{
+    Q_OBJECT
+public:
+    AbsoluteMove(QObject *parent=nullptr);
+    ~AbsoluteMove(){
+
+    }
+public slots:
+    void doWorks(short profile,int start,int end,int rep);
+    void moveStop();
+
+signals:
+    void workFinshed();
+
+
+private:
+    long axisState;
+    int m_stop;
+};
+
 #endif // AXIS_H

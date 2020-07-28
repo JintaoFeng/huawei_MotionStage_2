@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include "table.h"
 #include <QFileDialog>
+#include <QMessageBox>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -15,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setWindowTitle("MotionStage");
 
-    QImage image("../googolMotion/Resources/UPLogo.jpg");
+    QImage image("Resources/UPLogo.jpg");
     ui->imageLabel->setPixmap(QPixmap::fromImage(image));
     ui->imageLabel->setGeometry(0,0,image.width(),image.height());
 
@@ -60,6 +61,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this,&MainWindow::updateTerm,axi1,&axis::updateTerm);
     connect(this,&MainWindow::updateTerm,axi2,&axis::updateTerm);
     connect(this,&MainWindow::updateTerm,axi3,&axis::updateTerm);
+
+    connect(this,&MainWindow::move,axi1,&axis::Move);
+    connect(this,&MainWindow::move,axi2,&axis::Move);
+    connect(this,&MainWindow::move,axi3,&axis::Move);
 }
 
 MainWindow::~MainWindow()
@@ -137,7 +142,7 @@ void MainWindow::on_connectBtn_clicked()
     {
         emit updateStart();
     }
-    QString str= "..\\hauwei_MotionStage\\GTS800.cfg";
+    QString str= "..\\huawei_MotionStage\\GTS800.cfg";
     QByteArray temp=str.toLatin1();
     char* file=temp.data();
     retValue=GT_LoadConfig(file);
@@ -213,14 +218,14 @@ void MainWindow::on_closeBtn_clicked()
 void MainWindow::on_setBtn_clicked()
 {
     QVector<double> pos;
-//    double prfPos;
-//    GT_GetAxisPrfPos(1,&prfPos);
-//    pos<<prfPos;
-//    GT_GetAxisPrfPos(2,&prfPos);
-//    pos<<prfPos;
-//    GT_GetAxisPrfPos(3,&prfPos);
-//    pos<<prfPos;
-    pos<<12<<0.23<<0.235;
+    double prfPos;
+    GT_GetAxisPrfPos(1,&prfPos);
+    pos<<prfPos;
+    GT_GetAxisPrfPos(2,&prfPos);
+    pos<<prfPos;
+    GT_GetAxisPrfPos(3,&prfPos);
+    pos<<prfPos;
+ //   pos<<12<<0.23<<0.235;
     int cur=ui->tabWidget->currentIndex();
     tabWid.at(cur)->setPoint(pos);
 }
@@ -228,14 +233,19 @@ void MainWindow::on_setBtn_clicked()
 void MainWindow::on_moveBtn_clicked()
 {
     QVector<double> pos;
+    QVector<int> pos1;
     int cur=ui->tabWidget->currentIndex();
     pos=tabWid.at(cur)->getPoint();
-//    while(!pos.isEmpty())
-//    {
-//        double a=pos.at(0);
-        qDebug()<<pos.at(0)<<pos.at(1)<<pos.at(2)<<endl;
-//        i++;
-//    }
+    qDebug()<<pos<<endl;
+    if(!pos.isEmpty())
+    {
+        pos1<<(int)(pos.at(0)*1000)<<(int)(pos.at(1)*1000)<<(int)(pos.at(2)*1000);
+        emit move(pos1);
+    }
+    else
+    {
+        QMessageBox::warning(this,"Warning","不能使用空位移！！");
+    }
 }
 
 void MainWindow::on_saveBtn_clicked()
