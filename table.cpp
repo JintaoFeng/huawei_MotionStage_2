@@ -21,25 +21,57 @@ table::table(QWidget *parent) :
     ui->tableWidget->setColumnWidth(2,82);
     ui->tableWidget->setHorizontalHeaderLabels(headers);
     ui->tableWidget->setRowCount(1);
-    ui->tableWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  //  ui->tableWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     ui->tableWidget->setVerticalHeaderLabels(Vheaders);
     ui->tableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableWidget->verticalHeader()->setSectionsClickable(true);
+    ui->tableWidget->horizontalHeader()->setSectionsClickable(true);
+ //   ui->tableWidget.set
+    connect(ui->tableWidget->verticalHeader(),&QHeaderView::sectionDoubleClicked,this,&table::verRename);
+    connect(ui->tableWidget->horizontalHeader(),&QHeaderView::sectionDoubleClicked,this,&table::horRename);
 }
 
 table::~table()
 {
     delete ui;
 }
-
+void table::verRename(int logicIndex)
+{
+  //  qDebug()<<logicIndex<<endl;
+    int a=ui->tableWidget->rowCount();
+    QList<QString> Vheaders;
+    bool ok=false;
+    QString text = QInputDialog::getText(this,"INPUT","请输入点位名称",QLineEdit::Normal,"点位",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
+    for(int i=0;i<a;i++)
+    {
+        Vheaders<<ui->tableWidget->verticalHeaderItem(i)->text();
+    }
+    Vheaders.replace(logicIndex,text);
+    ui->tableWidget->setVerticalHeaderLabels(Vheaders);
+}
+void table::horRename(int logicIndex)
+{
+ //   qDebug()<<logicIndex<<endl;
+    int a=ui->tableWidget->columnCount();
+    QList<QString> Hheaders;
+    bool ok=false;
+    QString text = QInputDialog::getText(this,"INPUT","请输入轴名称",QLineEdit::Normal,"axis",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
+    for(int i=0;i<a;i++)
+    {
+        Hheaders<<ui->tableWidget->horizontalHeaderItem(i)->text();
+    }
+    Hheaders.replace(logicIndex,text);
+    ui->tableWidget->setHorizontalHeaderLabels(Hheaders);
+}
 void table::AddPoint()
 {
     int a=ui->tableWidget->rowCount();
     QList<QString> Vheaders;
     bool ok=false;
     QString text = QInputDialog::getText(this,"INPUT","请输入点位名称",QLineEdit::Normal,"点位",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
-    ui->tableWidget->setRowCount(a+1);
+    ui->tableWidget->insertRow(a);
     for(int i=0;i<a;i++)
     {
         Vheaders<<ui->tableWidget->verticalHeaderItem(i)->text();
@@ -53,8 +85,6 @@ void table::AddPoint()
 void table::DeletePoint()
 {
     ui->tableWidget->removeRow(ui->tableWidget->currentRow());
-  //  qDebug()<<ui->tableWidget->currentRow()<<endl;
-   // qDebug()<<this<<endl;
 }
 void table::setPoint(QVector<double> &point)
 {
@@ -107,6 +137,7 @@ void table::save()
         for (int i = 0; i < row; i++)
         {
             QString rowStr = "";
+            rowStr += ui->tableWidget->verticalHeaderItem(i)->text() + "\t";
             for (int j = 0; j < col; j++){
                 auto item=ui->tableWidget->item(i, j);
                 if(item)
@@ -148,24 +179,38 @@ void table::load()
             QStringList strList=str.split("\n");
             int i=0;
             int j=0;
+            QStringList Vheaders;
             if(!strList.isEmpty())
             {
                 ui->tableWidget->clearContents();
                 ui->tableWidget->setRowCount(1);
                 ui->tableWidget->setRowCount(strList.count()-1);
-       //        qDebug()<<strList.count()<<endl;
-                for(i=1;i<strList.count();i++)
+                for(i=0;i<strList.count();i++)
                 {
                     QStringList strList1=strList.at(i).split("\t");
+                    if(i==0)
+                    {
+                        ui->tableWidget->setHorizontalHeaderLabels(strList1);
+                        continue;
+                    }
+             //       qDebug()<<strList1<<endl;
                     for(j=0;j<strList1.count()-1;j++)
                     {
-                        ui->tableWidget->setItem(i-1,j,new QTableWidgetItem(strList1.at(j)));
-             //           qDebug()<<strList1.at(j)<<endl;
+                        if(j==0)
+                        {
+                            Vheaders<<strList1.at(j);
+                            continue;
+                        }
+                        ui->tableWidget->setItem(i-1,j-1,new QTableWidgetItem(strList1.at(j)));
+
                     }
+
                 }
+                ui->tableWidget->setVerticalHeaderLabels(Vheaders);
             }
 
             file.close();
         }
     }
 }
+

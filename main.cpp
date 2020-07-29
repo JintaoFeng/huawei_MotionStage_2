@@ -5,7 +5,7 @@
 //#include <Windows.h>
 //#include <DbgHelp.h>
 
-////程式异常捕获
+//程式异常捕获
 //LONG ApplicationCrashHandler(EXCEPTION_POINTERS *pException)
 //{
 //    //创建 Dump 文件
@@ -24,7 +24,7 @@
 
 //    //这里弹出一个错误对话框并退出程序
 
-////    QMessageBox::critical(NULL, "程序崩溃", "抱歉，请联系程序猿解决！");
+//    QMessageBox::critical(NULL, "程序崩溃", "抱歉，请联系程序猿解决！");
 
 //    return EXCEPTION_EXECUTE_HANDLER;
 //}

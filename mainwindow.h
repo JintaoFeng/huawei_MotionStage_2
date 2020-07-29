@@ -48,6 +48,8 @@ private slots:
 
     void on_loadBtn_clicked();
 
+    void on_tabWidget_tabBarDoubleClicked(int index);
+
 private:
     Ui::MainWindow *ui;
     QTimer *timer;

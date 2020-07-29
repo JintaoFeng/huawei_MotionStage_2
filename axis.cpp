@@ -2,6 +2,7 @@
 #include "ui_axis.h"
 #include <QtDebug>
 #include <QMutex>
+#include <QMessageBox>
 axis::axis(QWidget *parent,QString name) :
     QWidget(parent),
     ui(new Ui::axis)
@@ -46,14 +47,12 @@ axis::axis(QWidget *parent,QString name) :
     posSlider= new QSlider;
 
     alarmLabel->setText("驱动器报警");
-    positiveLimitLabel->setText("正限位");
-    negativeLimitLabel->setText("负限位");
+//    positiveLimitLabel->setText("正限位");
+//    negativeLimitLabel->setText("负限位");
     enableLabel->setText("驱动器使能");
     moveErrorLabel->setText("运动错误");
     moveStatusLabel->setText("运动状态");
     killStopLabel->setText("急停输入");
- //   QFont font()
-  //  alarmLabel->setFont()
 
     ui->gridLayout_6->addWidget(negativeLimitBtn,0,0);
     ui->gridLayout_6->addWidget(positiveLimitBtn,0,2);
@@ -70,6 +69,14 @@ axis::axis(QWidget *parent,QString name) :
     ui->gridLayout_5->addWidget(killStopBtn,2,1);
 
     ui->titleLabel->setText(name);
+    QFont font;
+    font.setPointSize(10);
+    font.setBold(true);
+    alarmLabel->setFont(font);
+    enableLabel->setFont(font);
+    moveErrorLabel->setFont(font);
+    moveStatusLabel->setFont(font);
+    killStopLabel->setFont(font);
 
   //  this->positiveLimitBtn->setBlue();
  //   this->negativeLimitBtn->setRed();
@@ -475,6 +482,14 @@ void axis::on_positiveMoveBtn_clicked()
 
     if(objectName()=="Axis1")
     {
+        GT_ClrSts(1,1);
+        GT_GetSts(1,&axisStatus);
+        if(axisStatus&0x20)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
+            return;
+        }
+
         GT_GetTrapPrm(1,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
@@ -488,11 +503,16 @@ void axis::on_positiveMoveBtn_clicked()
         pPos+=ui->posEdit->text().toDouble()*1000;
         GT_SetPos(1,(long)pPos);
         GT_Update(1);
-
-   //     emit realtive(1,pPos,ui->posEdit->text().toDouble()*1000,0);
     }
     else if(objectName()=="Axis2")
     {
+        GT_ClrSts(2,1);
+        GT_GetSts(2,&axisStatus);
+        if(axisStatus&0x20)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
+            return;
+        }
         GT_GetTrapPrm(2,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
@@ -509,6 +529,13 @@ void axis::on_positiveMoveBtn_clicked()
     }
     else if(objectName()=="Axis3")
     {
+        GT_ClrSts(3,1);
+        GT_GetSts(3,&axisStatus);
+        if(axisStatus&0x20)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
+            return;
+        }
         GT_GetTrapPrm(3,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
@@ -587,6 +614,13 @@ void axis::on_negitiveMoveBtn_clicked()
 
     if(objectName()=="Axis1")
     {
+        GT_ClrSts(1,1);
+        GT_GetSts(1,&axisStatus);
+        if(axisStatus&0x40)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+            return;
+        }
         GT_GetTrapPrm(1,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
@@ -603,6 +637,13 @@ void axis::on_negitiveMoveBtn_clicked()
     }
     else if(objectName()=="Axis2")
     {
+        GT_ClrSts(2,1);
+        GT_GetSts(2,&axisStatus);
+        if(axisStatus&0x40)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+            return;
+        }
         GT_GetTrapPrm(2,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
@@ -619,6 +660,13 @@ void axis::on_negitiveMoveBtn_clicked()
     }
     else if(objectName()=="Axis3")
     {
+        GT_ClrSts(3,1);
+        GT_GetSts(3,&axisStatus);
+        if(axisStatus&0x40)
+        {
+            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+            return;
+        }
         GT_GetTrapPrm(3,&trapPrm);
         trapPrm.acc=ui->accEdit->text().toDouble();
         trapPrm.dec=ui->accEdit->text().toDouble();
