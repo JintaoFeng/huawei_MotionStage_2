@@ -9,6 +9,7 @@
 #include "table.h"
 #include <QFileDialog>
 #include <QMessageBox>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -19,7 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     QImage image("Resources/UPLogo.jpg");
     ui->imageLabel->setPixmap(QPixmap::fromImage(image));
     ui->imageLabel->setGeometry(0,0,image.width(),image.height());
-
+       QFont font;
+       font.setPointSize(14);
+    ui->textEdit->setFont(font);
  //   this->s
 
     QTimer *timer=new QTimer;
@@ -114,7 +117,7 @@ void MainWindow::AddTab()
     tab->setAttribute(Qt::WA_DeleteOnClose);
     int cur=ui->tabWidget->addTab(tab,text);
     tabWid.insert(cur,tab);
-    qDebug()<<cur<<endl;
+ //   qDebug()<<cur<<endl;
     ui->tabWidget->setCurrentIndex(cur);
 
 }
@@ -160,13 +163,15 @@ void MainWindow::CommandHandler(QString command, int value)
     if(value)
     {
         str=QString("%1  failed!!  %2").arg(command).arg(value);
-        qDebug()<<str<<endl;
+
+   //     qDebug()<<str<<endl;
     }
     else
     {
         str=QString("%1  successful!!  %2").arg(command).arg(value);
-        qDebug()<<str<<endl;
+    //    qDebug()<<str<<endl;
     }
+    ui->textEdit->append(str);
 }
 
 void MainWindow::on_enableAllBtn_clicked()
@@ -261,4 +266,11 @@ void MainWindow::on_loadBtn_clicked()
 {
     int cur=ui->tabWidget->currentIndex();
     tabWid.at(cur)->load();
+}
+
+void MainWindow::on_tabWidget_tabBarDoubleClicked(int index)
+{
+    bool ok=false;
+    QString text = QInputDialog::getText(this,"INPUT","请输入产品名称",QLineEdit::Normal,"产品",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
+    ui->tabWidget->tabBar()->setTabText(index,text);
 }

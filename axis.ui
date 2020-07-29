@@ -522,7 +522,7 @@
       <item>
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="1" column="0">
-         <layout class="QGridLayout" name="gridLayout_4">
+         <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,0">
           <item row="0" column="1">
            <widget class="QLabel" name="posLabel">
             <property name="font">
@@ -574,7 +574,7 @@
          </layout>
         </item>
         <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout_6" columnstretch="1,5,1">
+         <layout class="QGridLayout" name="gridLayout_6" columnstretch="1,8,1">
           <item row="0" column="2">
            <spacer name="horizontalSpacer_3">
             <property name="orientation">

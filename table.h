@@ -2,6 +2,7 @@
 #define TABLE_H
 
 #include <QWidget>
+#include <QTableWidgetItem>
 
 namespace Ui {
 class table;
@@ -21,6 +22,9 @@ public:
     QVector<double> getPoint();
     void save();
     void load();
+private slots:
+    void verRename(int logicalIndex);
+    void horRename(int logicalIndex);
 private:
     Ui::table *ui;
 };
