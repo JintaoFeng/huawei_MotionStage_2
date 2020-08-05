@@ -52,3 +52,4 @@ DEPENDPATH += $$PWD/.
 
 RESOURCES += \
     logo.qrc
+QT +=xml

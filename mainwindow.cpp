@@ -9,6 +9,8 @@
 #include "table.h"
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QXmlStreamWriter>
+#include <QDomDocument>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,7 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
        QFont font;
        font.setPointSize(14);
     ui->textEdit->setFont(font);
- //   this->s
 
     QTimer *timer=new QTimer;
     connect(timer,&QTimer::timeout,this,&MainWindow::ShowTime);
@@ -34,12 +35,12 @@ MainWindow::MainWindow(QWidget *parent)
     timer->start(1000);
     ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    table *tab=new table(this);
+//    table *tab=new table(this);
 
-    tab->setAttribute(Qt::WA_DeleteOnClose);
-    int cur=ui->tabWidget->addTab(tab,"产品");
-    tabWid.insert(cur,tab);
-    ui->tabWidget->setCurrentIndex(cur);
+//    tab->setAttribute(Qt::WA_DeleteOnClose);
+//    int cur=ui->tabWidget->addTab(tab,"产品");
+//    tabWid.insert(cur,tab);
+//    ui->tabWidget->setCurrentIndex(cur);
 
     axi1=new axis(this,"Axis1");
     axi2=new axis(this,"Axis2");
@@ -53,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    axi2->show();
 //    axi3->show();
 
-
+    ReadXML();
     //axis中的返回值处理链接到mainwindow上
     connect(axi1,&axis::commandHandle,this,&MainWindow::CommandHandler,Qt::DirectConnection);
     connect(axi2,&axis::commandHandle,this,&MainWindow::CommandHandler,Qt::DirectConnection);
@@ -74,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    WriteXML();
     delete ui;
 }
 
@@ -232,8 +234,8 @@ void MainWindow::on_setBtn_clicked()
     pos<<prfPos;
     GT_GetPrfPos(3,&prfPos);
     pos<<prfPos;
-  //  pos.clear();
-  //  pos<<1200<<23000<<235;
+    pos.clear();
+    pos<<1200<<23000<<235;
     int cur=ui->tabWidget->currentIndex();
     tabWid.at(cur)->setPoint(pos);
 }
@@ -273,4 +275,136 @@ void MainWindow::on_tabWidget_tabBarDoubleClicked(int index)
     bool ok=false;
     QString text = QInputDialog::getText(this,"INPUT","请输入产品名称",QLineEdit::Normal,"产品",&ok,Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
     ui->tabWidget->tabBar()->setTabText(index,text);
+}
+
+//void MainWindow::ReadXML()
+//{
+//    QStringList m_data;
+//    QFile file("my.xml");
+//    if (!file.open(QFile::ReadOnly | QFile::Text))
+//    {
+//   //     qDebug()<<"Error: cannot open file";
+//        return;
+//    }
+//    QXmlStreamReader reader;
+//    reader.setDevice(&file);
+//    while (!reader.atEnd())
+//    {
+//        QXmlStreamReader::TokenType type = reader.readNext();
+//        if (type == QXmlStreamReader::Characters && !reader.isWhitespace())
+//        {
+//            QString temp(reader.text().toUtf8());
+//            m_data.append(temp);
+//        }
+//   //     qDebug()<<m_data<<endl;
+//    }
+//    int k=0;
+//    if(m_data.size()/3==0)
+//        return;
+//    for(int i=0;i<m_data.size();i++)
+//    {
+//        table *tab=new table;
+//        k=ui->tabWidget->addTab(tab,m_data.at(i));
+//        tab->setAttribute(Qt::WA_DeleteOnClose);
+//        tabWid.insert(k,tab);
+//        ui->tabWidget->setCurrentIndex(k);
+//        for(int j=0;j<3;j++)
+//        {
+//            QTableWidgetItem *newItem=new QTableWidgetItem();
+//            newItem->setText(m_data.at(k++));
+//            //qDebug()<<newItem->text();
+//            ui->strategyTableWidget->setItem(i,j,newItem);
+//        }
+//    }
+//}
+
+void MainWindow::ReadXML()
+{
+    QStringList m_data;
+    QFile file("data.xml");
+    if (!file.open(QFile::ReadOnly | QFile::Text))
+    {
+        qDebug()<<"Error: cannot open file";
+        return;
+    }
+    QDomDocument doc;
+    if(!doc.setContent(&file))
+    {
+        file.close();
+        return;
+    }
+    file.close();
+    QDomElement root=doc.documentElement();
+    QDomNode node=root.firstChild();    //返回第一个子节点
+   // qDebug()<<node.nodeName()<<endl;
+    while(!node.isNull())
+    {
+        if(node.isElement())
+        {
+            QDomElement e= node.toElement();
+        //    qDebug()<<e.tagName()<<e.attribute("tabText");
+            if(e.tagName()=="table")
+            {
+                table *tab= new table;
+                int k=ui->tabWidget->addTab(tab,e.attribute("tabText"));
+                tabWid.insert(k,tab);
+                tab->setAttribute(Qt::WA_DeleteOnClose);
+                ui->tabWidget->setCurrentIndex(k);
+                tabWid.at(k)->ReadXML(e);
+            }
+        }
+        node=node.nextSibling();
+    }
+}
+
+//void MainWindow::WriteXML()
+//{
+//    QFile file("my.xml");
+//    if (!file.open(QFile::WriteOnly | QFile::Text))
+//    {
+//        qDebug() << "Error: cannot open file";
+//        return;
+//    }
+//    QXmlStreamWriter writer(&file);
+//    writer.setAutoFormatting(true);
+//    writer.writeStartDocument();
+//    writer.writeStartElement("tab");
+//    for(int i=0;i <ui->tabWidget->count();i++)
+//    {
+//        writer.writeStartElement(QString("tab_%1").arg(i));
+//        writer.writeTextElement("tabText",ui->tabWidget->tabText(i));
+//        tabWid.at(i)->
+//        writer.writeEndElement();
+//    }
+//    writer.writeEndElement();
+//    writer.writeEndDocument();
+//    file.close();
+//}
+void MainWindow::WriteXML()
+{
+    QFile file("data.xml");
+    if (!file.open(QFile::WriteOnly | QFile::Text))
+    {
+        qDebug() << "Error: cannot open file";
+        return;
+    }
+    QDomDocument doc;
+    QDomProcessingInstruction instruction;
+    instruction=doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+    doc.appendChild(instruction);
+
+    QDomElement root=doc.createElement("tab");
+    doc.appendChild(root);              //添加根节点tab
+    for(int i=0;i<ui->tabWidget->count();i++)
+    {
+        QDomElement *table=new QDomElement;
+        *table=doc.createElement("table");    //每个tab创建一个节点
+        table->setAttribute("tabText",ui->tabWidget->tabText(i));
+        tabWid.at(i)->WriteXML(*table);
+        root.appendChild(*table);
+   //     qDebug()<<i<<ui->tabWidget->count()<<tabWid.size()<<endl;
+    }
+    QTextStream outStream(&file);
+    doc.save(outStream,4);
+    file.close();
 }

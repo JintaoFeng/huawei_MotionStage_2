@@ -20,7 +20,7 @@ table::table(QWidget *parent) :
     ui->tableWidget->setColumnWidth(1,82);
     ui->tableWidget->setColumnWidth(2,82);
     ui->tableWidget->setHorizontalHeaderLabels(headers);
-    ui->tableWidget->setRowCount(1);
+  //  ui->tableWidget->setRowCount(1);
   //  ui->tableWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     ui->tableWidget->setVerticalHeaderLabels(Vheaders);
     ui->tableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
@@ -28,6 +28,8 @@ table::table(QWidget *parent) :
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableWidget->verticalHeader()->setSectionsClickable(true);
     ui->tableWidget->horizontalHeader()->setSectionsClickable(true);
+    ui->tableWidget->horizontalHeader()->setStretchLastSection(true);
+
  //   ui->tableWidget.set
     connect(ui->tableWidget->verticalHeader(),&QHeaderView::sectionDoubleClicked,this,&table::verRename);
     connect(ui->tableWidget->horizontalHeader(),&QHeaderView::sectionDoubleClicked,this,&table::horRename);
@@ -214,3 +216,61 @@ void table::load()
     }
 }
 
+void table::WriteXML(QDomElement &node)
+{
+ //   QStringList list=ui->tableWidget->Ver
+    QDomDocument doc;
+    for (int i=0;i<ui->tableWidget->rowCount();i++)
+    {
+        QDomElement *row=new QDomElement;
+        *row=doc.createElement("ROW");
+        row->setAttribute("rowName",ui->tableWidget->verticalHeaderItem(i)->text());
+
+        for(int j=0;j<ui->tableWidget->columnCount();j++)
+        {
+            QDomElement *first=new QDomElement;
+            *first=doc.createElement("COLUMN");
+            first->setAttribute("columnName",ui->tableWidget->horizontalHeaderItem(j)->text());
+            QDomText *text=new QDomText;
+            QString rowStr;
+            auto item=ui->tableWidget->item(i, j);
+            if(item)
+                rowStr += item->text();
+            else
+                rowStr +=" ";
+            *text=doc.createTextNode(rowStr);
+            first->appendChild(*text);
+            row->appendChild(*first);
+        }
+        node.appendChild(*row);
+    }
+
+}
+void table::ReadXML(QDomElement &node)
+{
+    if(!node.isNull())
+    {
+        QDomNodeList rowList=node.childNodes();
+        QStringList verHeaderLabels;
+        QStringList horHeaderLabels;
+        for(int i=0;i<rowList.count();i++)
+        {
+            ui->tableWidget->insertRow(ui->tableWidget->rowCount());
+            verHeaderLabels<<rowList.at(i).toElement().attribute("rowName");
+            QDomNodeList columnList=rowList.at(i).childNodes();
+            for (int j=0;j<columnList.count();j++)
+            {
+                if(columnList.at(j).isElement())
+                {
+                    QDomElement e=columnList.at(j).toElement();
+                    horHeaderLabels<<e.attribute("columnName");
+                    ui->tableWidget->setItem(i,j,new QTableWidgetItem(e.text()));
+                }
+            }
+            ui->tableWidget->setHorizontalHeaderLabels(horHeaderLabels);
+            horHeaderLabels.clear();
+        }
+        ui->tableWidget->setVerticalHeaderLabels(verHeaderLabels);
+        verHeaderLabels.clear();
+    }
+}

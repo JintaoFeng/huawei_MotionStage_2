@@ -19,6 +19,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void ReadXML();
+    void WriteXML();
 public slots:
     void ShowTime();
     void CommandHandler(QString command, int value);

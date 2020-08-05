@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QTableWidgetItem>
+#include <QtXml>
 
 namespace Ui {
 class table;
@@ -22,6 +23,8 @@ public:
     QVector<double> getPoint();
     void save();
     void load();
+    void WriteXML(QDomElement &node);
+    void ReadXML(QDomElement &node);
 private slots:
     void verRename(int logicalIndex);
     void horRename(int logicalIndex);
