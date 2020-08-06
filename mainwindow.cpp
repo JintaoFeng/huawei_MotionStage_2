@@ -11,10 +11,14 @@
 #include <QMessageBox>
 #include <QXmlStreamWriter>
 #include <QDomDocument>
+#include "ACSC.h"
+
+HANDLE MainWindow::hComm=(HANDLE)-1;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+
 {
     ui->setupUi(this);
     this->setWindowTitle("MotionStage");
@@ -143,20 +147,55 @@ void MainWindow::DeletePoint()
 void MainWindow::on_connectBtn_clicked()
 {
     int retValue;
-    retValue=GT_Open();
-    CommandHandler("open",retValue);
-    if(~retValue)
+//    retValue=GT_Open();
+//    CommandHandler("open",retValue);
+//    if(~retValue)
+//    {
+//        emit updateStart();
+//    }
+//    QString str= "GTS800.cfg";
+//    QByteArray temp=str.toLatin1();
+//    char* file=temp.data();
+//    retValue=GT_LoadConfig(file);
+//    CommandHandler("load config",retValue);
+//    GT_ClrSts(1);
+//    GT_ClrSts(2);
+//    GT_ClrSts(3);
+    if(ui->connectBox->currentText()=="TCP")
     {
-        emit updateStart();
+        HANDLE hComm=(HANDLE)-1;
+        int Port = 703;
+        QString ip=ui->IPEdit->text();
+        QByteArray data=ip.toLatin1();
+        char *IP=data.data();
+        hComm = acsc_OpenCommEthernetTCP(IP,Port);
+        if (hComm == ACSC_INVALID)
+        {
+            char* error=new char[20];
+            int count=20;
+            int *size=new int;
+            acsc_GetErrorString(hComm,acsc_GetLastError(),error,count,size);
+            qDebug()<<"Error while opening communication: %d\n"<<
+            acsc_GetLastError()<<*error<<endl;
+        }
+        else
+        {
+            emit updateStart();
+        }
     }
-    QString str= "GTS800.cfg";
-    QByteArray temp=str.toLatin1();
-    char* file=temp.data();
-    retValue=GT_LoadConfig(file);
-    CommandHandler("load config",retValue);
-    GT_ClrSts(1);
-    GT_ClrSts(2);
-    GT_ClrSts(3);
+    else if(ui->connectBox->currentText()=="Simulation")
+    {
+        hComm = acsc_OpenCommSimulator();
+        if (hComm == ACSC_INVALID)
+        {
+            qDebug()<<"error opening communication: %d\n"<< acsc_GetLastError();
+        }
+        else
+        {
+            emit updateStart();
+        }
+  //      qDebug()<<hComm<<endl;
+    }
 }
 
 void MainWindow::CommandHandler(QString command, int value)
@@ -407,4 +446,16 @@ void MainWindow::WriteXML()
     QTextStream outStream(&file);
     doc.save(outStream,4);
     file.close();
+}
+
+void MainWindow::on_connectBox_currentIndexChanged(const QString &arg1)
+{
+    if(arg1=="TCP")
+    {
+        ui->IPEdit->setEnabled(true);
+    }
+    else if(arg1=="Simulation")
+    {
+        ui->IPEdit->setDisabled(true);
+    }
 }

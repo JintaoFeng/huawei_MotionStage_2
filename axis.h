@@ -8,12 +8,15 @@
 #include "gts.h"
 #include <QTimer>
 #include <QThread>
+#include "mainwindow.h"
+
 namespace Ui {
 class axis;
 }
 class Home;
 class RealtiveMove;
 class AbsoluteMove;
+class MainWindow;
 class axis : public QWidget
 {
     Q_OBJECT
@@ -21,6 +24,7 @@ class axis : public QWidget
 public:
     explicit axis(QWidget *parent = nullptr,QString name="axis");
     ~axis();
+    MainWindow *mainWindow;
 
 public slots:
     void updateStart();
@@ -43,6 +47,12 @@ private slots:
     void on_positiveMoveBtn_clicked();
 
     void on_negitiveMoveBtn_clicked();
+
+    void on_posEdit_editingFinished();
+
+    void on_velEdit_editingFinished();
+
+    void on_accEdit_editingFinished();
 
 private:
     Ui::axis *ui;
@@ -85,6 +95,9 @@ private:
 
     QThread* absoluteThread;
     AbsoluteMove* absoluteMove;
+    char* errorStr;
+    int count;
+    int* size;
 
 signals:
     void commandHandle(QString command,int value);

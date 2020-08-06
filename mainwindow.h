@@ -8,10 +8,11 @@
 #include <QTableWidget>
 #include <QList>
 #include "table.h"
+#include "ACSC.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
-
+class axis;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -21,9 +22,16 @@ public:
     ~MainWindow();
     void ReadXML();
     void WriteXML();
+    static HANDLE hComm;
+
+
 public slots:
     void ShowTime();
     void CommandHandler(QString command, int value);
+    HANDLE GetHandle()
+    {
+        return hComm;
+    }
 private slots:
 
     void on_tabWidget_customContextMenuRequested(const QPoint &pos);
@@ -51,6 +59,9 @@ private slots:
     void on_loadBtn_clicked();
 
     void on_tabWidget_tabBarDoubleClicked(int index);
+
+
+    void on_connectBox_currentIndexChanged(const QString &arg1);
 
 private:
     Ui::MainWindow *ui;

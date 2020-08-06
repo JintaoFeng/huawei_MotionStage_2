@@ -3,12 +3,18 @@
 #include <QtDebug>
 #include <QMutex>
 #include <QMessageBox>
+#include "ACSC.h"
+
+//class MainWindow;
 axis::axis(QWidget *parent,QString name) :
     QWidget(parent),
-    ui(new Ui::axis)
+
+    ui(new Ui::axis),
+    count(256)
 {
     ui->setupUi(this);
-
+    size=new int;
+    errorStr=new char[256];
     timer=new QTimer(this);
     connect(timer,&QTimer::timeout,this,&axis::timerOut);
     this->setObjectName(name);
@@ -106,74 +112,80 @@ void axis::on_enableBtn_clicked()
 {
     if(objectName()=="Axis1")
     {
-        GT_GetSts(1,&axisStatus);
-        if(axisStatus&0x200)
-        {
-            retValue=GT_AxisOff(1);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Enable");
-            }
-            commandHandle("Axis1 Enable off",retValue);
-        }
-        else
-        {
-            retValue=GT_AxisOn(1);
-            commandHandle("Axis1 Enable on",retValue);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Disable");
-            }
-        }
-
+//        GT_GetSts(1,&axisStatus);
+//        if(axisStatus&0x200)
+//        {
+//            retValue=GT_AxisOff(1);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Enable");
+//            }
+//            commandHandle("Axis1 Enable off",retValue);
+//        }
+//        else
+//        {
+//            retValue=GT_AxisOn(1);
+//            commandHandle("Axis1 Enable on",retValue);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Disable");
+//            }
+//        }
+        retValue=acsc_Enable(mainWindow->GetHandle(),ACSC_AXIS_0,nullptr);
     }
     else if(objectName()=="Axis2")
     {
-        GT_GetSts(2,&axisStatus);
-        if(axisStatus&0x200)
-        {
-            retValue=GT_AxisOff(2);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Enable");
-            }
-            commandHandle("Axis2 Enable off",retValue);
-        }
-        else
-        {
-            retValue=GT_AxisOn(2);
-            commandHandle("Axis2 Enable on",retValue);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Disable");
-            }
-        }
+//        GT_GetSts(2,&axisStatus);
+//        if(axisStatus&0x200)
+//        {
+//            retValue=GT_AxisOff(2);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Enable");
+//            }
+//            commandHandle("Axis2 Enable off",retValue);
+//        }
+//        else
+//        {
+//            retValue=GT_AxisOn(2);
+//            commandHandle("Axis2 Enable on",retValue);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Disable");
+//            }
+//        }
+        retValue=acsc_Enable(mainWindow->GetHandle(),ACSC_AXIS_1,nullptr);
     }
     else if(objectName()=="Axis3")
     {
-        GT_GetSts(3,&axisStatus);
-        if(axisStatus&0x200)
-        {
-            retValue=GT_AxisOff(3);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Enable");
-            }
-            commandHandle("Axis3 Enable off",retValue);
-        }
-        else
-        {
-            retValue=GT_AxisOn(3);
-            commandHandle("Axis3 Enable on",retValue);
-            if(!retValue)
-            {
-                ui->enableBtn->setText("Disable");
-            }
-        }
+//        GT_GetSts(3,&axisStatus);
+//        if(axisStatus&0x200)
+//        {
+//            retValue=GT_AxisOff(3);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Enable");
+//            }
+//            commandHandle("Axis3 Enable off",retValue);
+//        }
+//        else
+//        {
+//            retValue=GT_AxisOn(3);
+//            commandHandle("Axis3 Enable on",retValue);
+//            if(!retValue)
+//            {
+//                ui->enableBtn->setText("Disable");
+//            }
+//        }
+        retValue=acsc_Enable(mainWindow->GetHandle(),ACSC_AXIS_2,nullptr);
     }
     else if(objectName()==nullptr)
     {
         return;
+    }
+    if(!retValue)
+    {
+        qDebug()<<"error"<<acsc_GetLastError()<<endl;
     }
 }
 
@@ -187,9 +199,10 @@ void axis::timerOut()
 //        GT_GetAxisEncAcc(1,&acc,1);
 //        GT_GetAxisError(1,&error);
 //        GT_GetAxisPrfAcc(1,&prfAcc);
-        GT_GetAxisPrfPos(1,&prfPos);
+//        GT_GetAxisPrfPos(1,&prfPos);
 //        GT_GetAxisPrfVel(1,&prfVel);
-        GT_GetSts(1,&axisStatus);
+  //      GT_GetSts(1,&axisStatus);
+        acsc_GetRPosition(mainWindow->GetHandle(),ACSC_AXIS_0,&prfPos,nullptr);
     }
     else if(objectName()=="Axis2")
     {
@@ -198,9 +211,10 @@ void axis::timerOut()
 //        GT_GetAxisError(2,&error);
 //        GT_GetAxisEncAcc(2,&acc,1);
 //        GT_GetAxisPrfAcc(2,&prfAcc);
-        GT_GetAxisPrfPos(2,&prfPos);
+//        GT_GetAxisPrfPos(2,&prfPos);
 //        GT_GetAxisPrfVel(2,&prfVel);
-        GT_GetSts(2,&axisStatus);
+//        GT_GetSts(2,&axisStatus);
+        acsc_GetRPosition(mainWindow->GetHandle(),ACSC_AXIS_1,&prfPos,nullptr);
     }
     else if(objectName()=="Axis3")
     {
@@ -209,9 +223,10 @@ void axis::timerOut()
 //        GT_GetAxisError(3,&error);
 //        GT_GetAxisEncAcc(3,&acc,1);
 //        GT_GetAxisPrfAcc(3,&prfAcc);
-        GT_GetAxisPrfPos(3,&prfPos);
+//        GT_GetAxisPrfPos(3,&prfPos);
 //        GT_GetAxisPrfVel(3,&prfVel);
-        GT_GetSts(3,&axisStatus);
+//        GT_GetSts(3,&axisStatus);
+        acsc_GetRPosition(mainWindow->GetHandle(),ACSC_AXIS_2,&prfPos,nullptr);
     }
     else if(objectName()==nullptr)
     {
@@ -224,66 +239,66 @@ void axis::timerOut()
 //    ui->prfPosText->setText(QString("%1").arg(prfPos,3,'f',1));
 //    ui->prfVelText->setText(QString("%1").arg(prfVel,3,'f',1));
 //    ui->prfAccText->setText(QString("%1").arg(prfAcc,3,'f',1));
-    ui->posLabel->setText(QString("%1").arg(prfPos/1000.0,3,'f',1));
-    ui->posSlider->setSliderPosition((int)(prfPos/1000.0));
-    if(axisStatus&0x02)
-    {
-        this->alarmBtn->setRed();
-    }
-    else
-    {
-        this->alarmBtn->setBlue();
-    }
-    if(axisStatus&0x20)
-    {
-        this->positiveLimitBtn->setRed();
-    }
-    else
-    {
-        this->positiveLimitBtn->setBlue();
-    }
-    if(axisStatus&0x10)
-    {
-        this->moveErrorBtn->setRed();
-    }
-    else
-    {
-        this->moveErrorBtn->setBlue();
-    }
-    if(axisStatus&0x40)
-    {
-        this->negativeLimitBtn->setRed();
-    }
-    else
-    {
-        this->negativeLimitBtn->setBlue();
-    }
-    if(axisStatus&0x200)
-    {
-        this->enableBtn2->setRed();
-        ui->enableBtn->setText("Disable");
-    }
-    else
-    {
-        this->enableBtn2->setBlue();
-        ui->enableBtn->setText("Enable");
-    }
-    if(axisStatus&0x400)
-    {
-        this->moveStatusBtn->setRed();
-    }
-    else
-    {
-        this->moveStatusBtn->setBlue();
-    }
-    if(axisStatus&0x100)
-    {
-        this->killStopBtn->setRed();
-    }
-    else
-    {
-        this->killStopBtn->setBlue();
-    }
+    ui->posLabel->setText(QString("%1").arg(prfPos,3,'f',1));
+    ui->posSlider->setSliderPosition((int)(prfPos));
+//    if(axisStatus&0x02)
+//    {
+//        this->alarmBtn->setRed();
+//    }
+//    else
+//    {
+//        this->alarmBtn->setBlue();
+//    }
+//    if(axisStatus&0x20)
+//    {
+//        this->positiveLimitBtn->setRed();
+//    }
+//    else
+//    {
+//        this->positiveLimitBtn->setBlue();
+//    }
+//    if(axisStatus&0x10)
+//    {
+//        this->moveErrorBtn->setRed();
+//    }
+//    else
+//    {
+//        this->moveErrorBtn->setBlue();
+//    }
+//    if(axisStatus&0x40)
+//    {
+//        this->negativeLimitBtn->setRed();
+//    }
+//    else
+//    {
+//        this->negativeLimitBtn->setBlue();
+//    }
+//    if(axisStatus&0x200)
+//    {
+//        this->enableBtn2->setRed();
+//        ui->enableBtn->setText("Disable");
+//    }
+//    else
+//    {
+//        this->enableBtn2->setBlue();
+//        ui->enableBtn->setText("Enable");
+//    }
+//    if(axisStatus&0x400)
+//    {
+//        this->moveStatusBtn->setRed();
+//    }
+//    else
+//    {
+//        this->moveStatusBtn->setBlue();
+//    }
+//    if(axisStatus&0x100)
+//    {
+//        this->killStopBtn->setRed();
+//    }
+//    else
+//    {
+//        this->killStopBtn->setBlue();
+//    }
 }
 
 void axis::on_zeroBtn_clicked()
@@ -464,95 +479,69 @@ void axis::on_homeBtn_clicked()
 
 void axis::on_positiveMoveBtn_clicked()
 {
-//    realtiveThread=new QThread;
-//    realtiveMove=new RealtiveMove;
-//    realtiveMove->moveToThread(realtiveThread);
-
-//    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
-
-//    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
-//    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
-
-//    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
-
-//    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
-//        realtiveThread->quit();
-//    });
-//    realtiveThread->start();
-
     if(objectName()=="Axis1")
     {
-        GT_ClrSts(1,1);
-        GT_GetSts(1,&axisStatus);
-        if(axisStatus&0x20)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
-            return;
-        }
-
-        GT_GetTrapPrm(1,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(1);
-        GT_SetTrapPrm(1,&trapPrm);
-        retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
-        commandHandle("axis1 setVel",retValue);
-        GT_GetPrfPos(1,&pPos);
-
-        pPos+=ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(1,(long)pPos);
-        GT_Update(1);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_0,ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
     else if(objectName()=="Axis2")
     {
-        GT_ClrSts(2,1);
-        GT_GetSts(2,&axisStatus);
-        if(axisStatus&0x20)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
-            return;
-        }
-        GT_GetTrapPrm(2,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(2);
-        GT_SetTrapPrm(2,&trapPrm);
-        retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
-        commandHandle("axis2 setVel",retValue);
-        GT_GetPrfPos(2,&pPos);
-        pPos+=ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(2,(long)pPos);
-        GT_Update(1<<1);
- //       emit realtive(2,pPos,ui->posEdit->text().toDouble()*1000,0);
+//        GT_ClrSts(2,1);
+//        GT_GetSts(2,&axisStatus);
+//        if(axisStatus&0x20)
+//        {
+//            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
+//            return;
+//        }
+//        GT_GetTrapPrm(2,&trapPrm);
+//        trapPrm.acc=ui->accEdit->text().toDouble();
+//        trapPrm.dec=ui->accEdit->text().toDouble();
+//        trapPrm.smoothTime=49;
+//        GT_PrfTrap(2);
+//        GT_SetTrapPrm(2,&trapPrm);
+//        retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
+//        commandHandle("axis2 setVel",retValue);
+//        GT_GetPrfPos(2,&pPos);
+//        pPos+=ui->posEdit->text().toDouble()*1000;
+//        GT_SetPos(2,(long)pPos);
+//        GT_Update(1<<1);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_0,ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
     else if(objectName()=="Axis3")
     {
-        GT_ClrSts(3,1);
-        GT_GetSts(3,&axisStatus);
-        if(axisStatus&0x20)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
-            return;
-        }
-        GT_GetTrapPrm(3,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(3);
-        GT_SetTrapPrm(3,&trapPrm);
-        retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
-        commandHandle("axis3 setVel",retValue);
-        GT_GetPrfPos(3,&pPos);
-        pPos+=ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(3,(long)pPos);
-        GT_Update(1<<2);
-  //      emit realtive(3,pPos,ui->posEdit->text().toDouble()*1000,0);
+//        GT_ClrSts(3,1);
+//        GT_GetSts(3,&axisStatus);
+//        if(axisStatus&0x20)
+//        {
+//            QMessageBox::warning(this,"Warning","该自由度处于正限位状态，请先往负方向运动");
+//            return;
+//        }
+//        GT_GetTrapPrm(3,&trapPrm);
+//        trapPrm.acc=ui->accEdit->text().toDouble();
+//        trapPrm.dec=ui->accEdit->text().toDouble();
+//        trapPrm.smoothTime=49;
+//        GT_PrfTrap(3);
+//        GT_SetTrapPrm(3,&trapPrm);
+//        retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
+//        commandHandle("axis3 setVel",retValue);
+//        GT_GetPrfPos(3,&pPos);
+//        pPos+=ui->posEdit->text().toDouble()*1000;
+//        GT_SetPos(3,(long)pPos);
+//        GT_Update(1<<2);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_0,ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
-    else if(objectName()==nullptr)
+
+
     {
         return;
+    }
+    if(!retValue)
+    {
+        retValue=acsc_GetLastError();
+        acsc_GetErrorString(mainWindow->GetHandle(),retValue,errorStr,count,size);
+        qDebug()<<errorStr<<endl;
     }
 }
 
@@ -596,90 +585,77 @@ RealtiveMove::RealtiveMove(QObject *parent):QObject(parent)
 
 void axis::on_negitiveMoveBtn_clicked()
 {
-//    realtiveThread=new QThread;
-//    realtiveMove=new RealtiveMove;
-//    realtiveMove->moveToThread(realtiveThread);
-
-//    connect(this,&axis::realtive,realtiveMove,&RealtiveMove::doWorks);
-
-//    connect(realtiveThread,&QThread::finished,realtiveMove,&QObject::deleteLater);
-//    connect(realtiveMove,&RealtiveMove::destroyed,realtiveThread,&QThread::deleteLater);
-
-//    connect(this,&axis::moveStop,realtiveMove,&RealtiveMove::moveStop,Qt::DirectConnection);
-
-//    connect(realtiveMove,&RealtiveMove::workFinshed,[this](){
-//        realtiveThread->quit();
-//    });
-//    realtiveThread->start();
-
     if(objectName()=="Axis1")
     {
-        GT_ClrSts(1,1);
-        GT_GetSts(1,&axisStatus);
-        if(axisStatus&0x40)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
-            return;
-        }
-        GT_GetTrapPrm(1,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(1);
-        GT_SetTrapPrm(1,&trapPrm);
-        retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
-        commandHandle("axis1 setVel",retValue);
-        GT_GetPrfPos(1,&pPos);
-        pPos-=ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(1,(long)pPos);
-        GT_Update(1);
-    //    emit realtive(1,pPos,ui->posEdit->text().toDouble()*1000,1);
+//        GT_ClrSts(1,1);
+//        GT_GetSts(1,&axisStatus);
+//        if(axisStatus&0x40)
+//        {
+//            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+//            return;
+//        }
+//        GT_GetTrapPrm(1,&trapPrm);
+//        trapPrm.acc=ui->accEdit->text().toDouble();
+//        trapPrm.dec=ui->accEdit->text().toDouble();
+//        trapPrm.smoothTime=49;
+//        GT_PrfTrap(1);
+//        GT_SetTrapPrm(1,&trapPrm);
+//        retValue=GT_SetVel(1,ui->velEdit->text().toDouble());
+//        commandHandle("axis1 setVel",retValue);
+//        GT_GetPrfPos(1,&pPos);
+//        pPos-=ui->posEdit->text().toDouble()*1000;
+//        GT_SetPos(1,(long)pPos);
+//        GT_Update(1);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_0,-ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
     else if(objectName()=="Axis2")
     {
-        GT_ClrSts(2,1);
-        GT_GetSts(2,&axisStatus);
-        if(axisStatus&0x40)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
-            return;
-        }
-        GT_GetTrapPrm(2,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(2);
-        GT_SetTrapPrm(2,&trapPrm);
-        retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
-        commandHandle("axis2 setVel",retValue);
-        GT_GetPrfPos(2,&pPos);
-        pPos-=ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(2,(long)pPos);
-        GT_Update(1<<1);
-     //   emit realtive(2,pPos,ui->posEdit->text().toDouble()*1000,1);
+//        GT_ClrSts(2,1);
+//        GT_GetSts(2,&axisStatus);
+//        if(axisStatus&0x40)
+//        {
+//            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+//            return;
+//        }
+//        GT_GetTrapPrm(2,&trapPrm);
+//        trapPrm.acc=ui->accEdit->text().toDouble();
+//        trapPrm.dec=ui->accEdit->text().toDouble();
+//        trapPrm.smoothTime=49;
+//        GT_PrfTrap(2);
+//        GT_SetTrapPrm(2,&trapPrm);
+//        retValue=GT_SetVel(2,ui->velEdit->text().toDouble());
+//        commandHandle("axis2 setVel",retValue);
+//        GT_GetPrfPos(2,&pPos);
+//        pPos-=ui->posEdit->text().toDouble()*1000;
+//        GT_SetPos(2,(long)pPos);
+//        GT_Update(1<<1);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_1,-ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
     else if(objectName()=="Axis3")
     {
-        GT_ClrSts(3,1);
-        GT_GetSts(3,&axisStatus);
-        if(axisStatus&0x40)
-        {
-            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
-            return;
-        }
-        GT_GetTrapPrm(3,&trapPrm);
-        trapPrm.acc=ui->accEdit->text().toDouble();
-        trapPrm.dec=ui->accEdit->text().toDouble();
-        trapPrm.smoothTime=49;
-        GT_PrfTrap(3);
-        GT_SetTrapPrm(3,&trapPrm);
-        retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
-        commandHandle("axis3 setVel",retValue);
-        GT_GetPrfPos(3,&pPos);
-        pPos-= ui->posEdit->text().toDouble()*1000;
-        GT_SetPos(3,(long)pPos);
-        GT_Update(1<<2);
-     //   emit realtive(3,pPos,ui->posEdit->text().toDouble()*1000,1);
+//        GT_ClrSts(3,1);
+//        GT_GetSts(3,&axisStatus);
+//        if(axisStatus&0x40)
+//        {
+//            QMessageBox::warning(this,"Warning","该自由度处于负限位状态，请先往正方向运动");
+//            return;
+//        }
+//        GT_GetTrapPrm(3,&trapPrm);
+//        trapPrm.acc=ui->accEdit->text().toDouble();
+//        trapPrm.dec=ui->accEdit->text().toDouble();
+//        trapPrm.smoothTime=49;
+//        GT_PrfTrap(3);
+//        GT_SetTrapPrm(3,&trapPrm);
+//        retValue=GT_SetVel(3,ui->velEdit->text().toDouble());
+//        commandHandle("axis3 setVel",retValue);
+//        GT_GetPrfPos(3,&pPos);
+//        pPos-= ui->posEdit->text().toDouble()*1000;
+//        GT_SetPos(3,(long)pPos);
+//        GT_Update(1<<2);
+        retValue=acsc_ToPoint(mainWindow->GetHandle(),ACSC_AMF_RELATIVE,ACSC_AXIS_2,-ui->posEdit->text().toDouble(),nullptr);
+        qDebug()<<retValue<<endl;
     }
     else if(objectName()==nullptr)
     {
@@ -797,3 +773,58 @@ void AbsoluteMove::moveStop()
 }
 
 
+
+void axis::on_posEdit_editingFinished()
+{
+
+}
+
+void axis::on_velEdit_editingFinished()
+{
+//    qDebug()<<mainWindow->GetHandle()<<endl;
+    int retValue=0;
+    if(this->objectName()=="Axis1")
+    {
+        retValue=acsc_SetVelocity(mainWindow->GetHandle(),ACSC_AXIS_0,ui->velEdit->text().toDouble(),nullptr);
+
+    }
+    else if(this->objectName()=="Axis2")
+    {
+        retValue=acsc_SetVelocity(mainWindow->GetHandle(),ACSC_AXIS_1,ui->velEdit->text().toDouble(),nullptr);
+
+    }
+    else if(this->objectName()=="Axis3")
+    {
+        retValue=acsc_SetVelocity(mainWindow->GetHandle(),ACSC_AXIS_2,ui->velEdit->text().toDouble(),nullptr);
+
+    }
+    if(!retValue)
+    {
+        qDebug()<<"error"<<acsc_GetLastError()<<endl;
+    }
+ //   qDebug()<<retValue<<endl;
+}
+
+void axis::on_accEdit_editingFinished()
+{
+    int retValue=0;
+    if(this->objectName()=="Axis1")
+    {
+        retValue= acsc_SetAcceleration(mainWindow->GetHandle(),ACSC_AXIS_0,ui->accEdit->text().toDouble(),nullptr);
+        retValue= acsc_SetDeceleration(mainWindow->GetHandle(),ACSC_AXIS_0,ui->accEdit->text().toDouble(),nullptr);
+    }
+    else if(this->objectName()=="Axis2")
+    {
+        retValue= acsc_SetAcceleration(mainWindow->GetHandle(),ACSC_AXIS_1,ui->accEdit->text().toDouble(),nullptr);
+        retValue= acsc_SetDeceleration(mainWindow->GetHandle(),ACSC_AXIS_1,ui->accEdit->text().toDouble(),nullptr);
+    }
+    else if(this->objectName()=="Axis3")
+    {
+        retValue= acsc_SetAcceleration(mainWindow->GetHandle(),ACSC_AXIS_2,ui->accEdit->text().toDouble(),nullptr);
+        retValue= acsc_SetDeceleration(mainWindow->GetHandle(),ACSC_AXIS_2,ui->accEdit->text().toDouble(),nullptr);
+    }
+    if(!retValue)
+    {
+        qDebug()<<"error"<<acsc_GetLastError()<<endl;
+    }
+}
