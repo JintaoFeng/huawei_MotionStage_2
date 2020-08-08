@@ -40,7 +40,7 @@
      <property name="frameShadow">
       <enum>QFrame::Sunken</enum>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,3,3,2">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,3,3,3,4">
       <item>
        <layout class="QFormLayout" name="formLayout">
         <property name="fieldGrowthPolicy">
@@ -520,24 +520,9 @@
        </layout>
       </item>
       <item>
-       <layout class="QGridLayout" name="gridLayout_3">
+       <layout class="QGridLayout" name="gridLayout_3" rowstretch="3,2">
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,0">
-          <item row="0" column="1">
-           <widget class="QLabel" name="posLabel">
-            <property name="font">
-             <font>
-              <pointsize>14</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="negativeLabel">
             <property name="font">
@@ -568,8 +553,20 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <layout class="QGridLayout" name="gridLayout_5"/>
+          <item row="0" column="1">
+           <widget class="QLabel" name="posLabel">
+            <property name="font">
+             <font>
+              <pointsize>14</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -620,6 +617,9 @@
          </layout>
         </item>
        </layout>
+      </item>
+      <item>
+       <layout class="QGridLayout" name="gridLayout_5"/>
       </item>
      </layout>
     </widget>

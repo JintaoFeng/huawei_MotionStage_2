@@ -94,9 +94,9 @@ void table::setPoint(QVector<double> &point)
     int cur=ui->tableWidget->currentRow();
     if(cur>=0)
     {
-        ui->tableWidget->setItem(cur,0,new QTableWidgetItem(QString::number(point.at(0)/1000.0)));
-        ui->tableWidget->setItem(cur,1,new QTableWidgetItem(QString::number(point.at(1)/1000.0)));
-        ui->tableWidget->setItem(cur,2,new QTableWidgetItem(QString::number(point.at(2)/1000.0)));
+        ui->tableWidget->setItem(cur,0,new QTableWidgetItem(QString::number(point.at(0))));
+        ui->tableWidget->setItem(cur,1,new QTableWidgetItem(QString::number(point.at(1))));
+        ui->tableWidget->setItem(cur,2,new QTableWidgetItem(QString::number(point.at(2))));
     }
     else
     {
@@ -109,14 +109,13 @@ QVector<double> table::getPoint()
     int cur=ui->tableWidget->currentRow();
     if(cur>=0)
     {
-        pos<<ui->tableWidget->item(cur,0)->text().toDouble()*1000;
-        pos<<ui->tableWidget->item(cur,1)->text().toDouble()*1000;
-        pos<<ui->tableWidget->item(cur,2)->text().toDouble()*1000;
+        pos<<ui->tableWidget->item(cur,0)->text().toDouble();
+        pos<<ui->tableWidget->item(cur,1)->text().toDouble();
+        pos<<ui->tableWidget->item(cur,2)->text().toDouble();
     }
     else
     {
         QMessageBox::warning(this,"Warning","请选择相应的位置！");
-      //  pos<<0<<0<<0;
     }
     return pos;
 }

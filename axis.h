@@ -30,7 +30,6 @@ public slots:
     void updateStart();
     void updateTerm();
     void Move(QVector<double> pos);
-    void absoluteThreadFinished();
 
 private slots:
     void on_enableBtn_clicked();
@@ -48,8 +47,6 @@ private slots:
 
     void on_negitiveMoveBtn_clicked();
 
-    void on_posEdit_editingFinished();
-
     void on_velEdit_editingFinished();
 
     void on_accEdit_editingFinished();
@@ -65,6 +62,7 @@ private:
     LightButton *moveErrorBtn;
     LightButton *moveStatusBtn;
     LightButton *killStopBtn;
+    LightButton *programErrorBtn;
     QLabel *alarmLabel;
     QLabel *positiveLimitLabel;
     QLabel *negativeLimitLabel;
@@ -72,6 +70,7 @@ private:
     QLabel *moveErrorLabel;
     QLabel *moveStatusLabel;
     QLabel *killStopLabel;
+    QLabel *programErrorLabel;
 
     int retValue;
     QTimer* timer;
@@ -83,93 +82,18 @@ private:
     double prfVel;
     double prfAcc;
     double pPos;
-    TJogPrm jogPrm;
-    TTrapPrm trapPrm;
-    long axisStatus;
+    int axisStatus;
+    int motorStatus;
+    int safetyStatus;
 
-    QThread* homeThread;
-    Home *home;
-
-    RealtiveMove *realtiveMove;
-    QThread *realtiveThread;
-
-    QThread* absoluteThread;
-    AbsoluteMove* absoluteMove;
     char* errorStr;
     int count;
     int* size;
 
 signals:
-    void commandHandle(QString command,int value);
-    void absolute(short profile,double start,double end,int rep);
-    void realtive(short profile,double start,double end,int rep);
-    void moveStop();
-    void sHome(int axis);
+    void commandHandle(int value);
 
 };
 
-
-class Home:public QObject
-{
-    Q_OBJECT
-public:
-    Home(QObject *parent=nullptr);
-    ~Home(){}
-public slots:
-    void doWorks(short axis);
-    void moveStop();
-    void start();
-private:
-    THomeStatus tHomeSta;
-    THomeStatus tHomeSta1;
-    THomeStatus tHomeSta2;
-    THomeStatus tHomeSta3;
-    THomePrm tHomePrm;
-signals:
-    void workFinished();
-
-};
-
-class RealtiveMove:public QObject
-{
-    Q_OBJECT
-public:
-    RealtiveMove(QObject *parent=nullptr);
-    ~RealtiveMove(){
-
-    }
-public slots:
-    void doWorks(short profile,double start,double end,int rep);
-    void moveStop();
-
-signals:
-    void workFinshed();
-
-
-private:
-    long axisState;
-    int m_stop;
-};
-
-class AbsoluteMove:public QObject
-{
-    Q_OBJECT
-public:
-    AbsoluteMove(QObject *parent=nullptr);
-    ~AbsoluteMove(){
-
-    }
-public slots:
-    void doWorks(short profile,double start,double end,int rep);
-    void moveStop();
-
-signals:
-    void workFinshed();
-
-
-private:
-    long axisState;
-    int m_stop;
-};
 
 #endif // AXIS_H

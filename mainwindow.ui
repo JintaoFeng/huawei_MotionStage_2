@@ -178,7 +178,7 @@
         <property name="frameShadow">
          <enum>QFrame::Sunken</enum>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,1,0,1,1,0,0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,1,1,1,0,0,0,0">
          <property name="sizeConstraint">
           <enum>QLayout::SetDefaultConstraint</enum>
          </property>
@@ -267,38 +267,6 @@
            </property>
            <property name="text">
             <string>Connect</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="closeBtn">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>35</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>13</pointsize>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>DisConnect</string>
            </property>
           </widget>
          </item>

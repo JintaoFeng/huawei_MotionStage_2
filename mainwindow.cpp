@@ -18,10 +18,17 @@ HANDLE MainWindow::hComm=(HANDLE)-1;
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    ,errorCount(256)
 
 {
     ui->setupUi(this);
     this->setWindowTitle("MotionStage");
+    axi[0]=ACSC_AXIS_0;
+    axi[1]=ACSC_AXIS_1;
+    axi[2]=ACSC_AXIS_2;
+    axi[3]=-1;
+    errorStr=new char[256];
+    errorSize=new int;
 
     QImage image("Resources/UPLogo.jpg");
     ui->imageLabel->setPixmap(QPixmap::fromImage(image));
@@ -54,9 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->horizontalLayout_6->addWidget(axi2,0);
     ui->horizontalLayout_6->addWidget(axi3,0);
 
-//    axi1->show();
-//    axi2->show();
-//    axi3->show();
+    setting=new QSettings("u-precision","huawei_MotionStage",this);
+    ui->IPEdit->setText(setting->value("IP").toString());
+
 
     ReadXML();
     //axis中的返回值处理链接到mainwindow上
@@ -79,6 +86,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    setting->setValue("IP",ui->IPEdit->text());
     WriteXML();
     delete ui;
 }
@@ -88,16 +96,25 @@ void MainWindow::ShowTime()
     ui->timeNumber->display(QDateTime::currentDateTime().toString("hh:mm:ss"));
     ui->dataNumber->display(QDateTime::currentDateTime().toString("yyyy.MM.dd"));
 
-    GT_GetSts(1,&axisStatus1);
-    GT_GetSts(2,&axisStatus2);
-    GT_GetSts(3,&axisStatus3);
-    if(axisStatus1&0x200 && axisStatus2&0x200 && axisStatus3&0x200)
+    acsc_GetMotorState(hComm,ACSC_AXIS_0,&motorStatus1,nullptr);
+    acsc_GetMotorState(hComm,ACSC_AXIS_1,&motorStatus2,nullptr);
+    acsc_GetMotorState(hComm,ACSC_AXIS_2,&motorStatus3,nullptr);
+    acsc_GetConnectionInfo(MainWindow::hComm,&connectInfo);
+    if(connectInfo.Type==0)
     {
-        ui->enableAllBtn->setText("Disable");
+        ui->connectBtn->setText("Connect");
     }
     else
     {
-        ui->enableAllBtn->setText("Enable");
+        ui->connectBtn->setText("DisCon");
+    }
+    if(motorStatus1&0x1 && motorStatus2&0x1 && motorStatus3&0x1)
+    {
+        ui->enableAllBtn->setText("DISABLE");
+    }
+    else
+    {
+        ui->enableAllBtn->setText("ENABLE");
     }
 }
 
@@ -146,135 +163,98 @@ void MainWindow::DeletePoint()
 }
 void MainWindow::on_connectBtn_clicked()
 {
-    int retValue;
-//    retValue=GT_Open();
-//    CommandHandler("open",retValue);
-//    if(~retValue)
-//    {
-//        emit updateStart();
-//    }
-//    QString str= "GTS800.cfg";
-//    QByteArray temp=str.toLatin1();
-//    char* file=temp.data();
-//    retValue=GT_LoadConfig(file);
-//    CommandHandler("load config",retValue);
-//    GT_ClrSts(1);
-//    GT_ClrSts(2);
-//    GT_ClrSts(3);
-    if(ui->connectBox->currentText()=="TCP")
+    acsc_GetConnectionInfo(MainWindow::hComm,&connectInfo);
+    if(connectInfo.Type==0)
     {
-        HANDLE hComm=(HANDLE)-1;
-        int Port = 703;
-        QString ip=ui->IPEdit->text();
-        QByteArray data=ip.toLatin1();
-        char *IP=data.data();
-        hComm = acsc_OpenCommEthernetTCP(IP,Port);
-        if (hComm == ACSC_INVALID)
+        if(ui->connectBox->currentText()=="TCP")
         {
-            char* error=new char[20];
-            int count=20;
-            int *size=new int;
-            acsc_GetErrorString(hComm,acsc_GetLastError(),error,count,size);
-            qDebug()<<"Error while opening communication: %d\n"<<
-            acsc_GetLastError()<<*error<<endl;
+            HANDLE hComm=(HANDLE)-1;
+            int Port = 703;
+            QString ip=ui->IPEdit->text();
+            QByteArray data=ip.toLatin1();
+            char *IP=data.data();
+            hComm = acsc_OpenCommEthernetTCP(IP,Port);
+            if (hComm == ACSC_INVALID)
+            {
+                CommandHandler(0);
+            }
+            else
+            {
+                emit updateStart();
+            }
         }
-        else
+        else if(ui->connectBox->currentText()=="Simulation")
         {
-            emit updateStart();
+            hComm = acsc_OpenCommSimulator();
+            if (hComm == ACSC_INVALID)
+            {
+                CommandHandler(0);
+            }
+            else
+            {
+                emit updateStart();
+            }
         }
-    }
-    else if(ui->connectBox->currentText()=="Simulation")
-    {
-        hComm = acsc_OpenCommSimulator();
-        if (hComm == ACSC_INVALID)
-        {
-            qDebug()<<"error opening communication: %d\n"<< acsc_GetLastError();
-        }
-        else
-        {
-            emit updateStart();
-        }
-  //      qDebug()<<hComm<<endl;
-    }
-}
-
-void MainWindow::CommandHandler(QString command, int value)
-{
-    QString str;
-    if(value)
-    {
-        str=QString("%1  failed!!  %2").arg(command).arg(value);
-
-   //     qDebug()<<str<<endl;
+        ui->connectBtn->setText("DisCon");
     }
     else
     {
-        str=QString("%1  successful!!  %2").arg(command).arg(value);
-    //    qDebug()<<str<<endl;
+        acsc_CloseComm(hComm);
+        ui->connectBtn->setText("Connect");
     }
-    ui->textEdit->append(str);
+
+}
+
+void MainWindow::CommandHandler(int value)
+{
+    if(!value)
+    {
+        retValue=acsc_GetLastError();
+        if(retValue)
+        {
+            memset(errorStr,0,256);
+            if(acsc_GetErrorString(hComm,retValue,errorStr,errorCount,errorSize))
+            {
+                errorStr[*errorSize]='\0';
+                QMessageBox::warning(this,"ERROR",errorStr);
+            }
+        }
+
+    }
 }
 
 void MainWindow::on_enableAllBtn_clicked()
 {
-    GT_GetSts(1,&axisStatus1);
-    GT_GetSts(2,&axisStatus2);
-    GT_GetSts(3,&axisStatus3);
-    if(axisStatus1&0x200 && axisStatus2&0x200 && axisStatus3&0x200)
+    if(ui->enableAllBtn->text()=="ENABLE")
     {
-        retValue=GT_AxisOff(1);
-        CommandHandler("Axis1 Enable off",retValue);
-        retValue=GT_AxisOff(2);
-        CommandHandler("Axis2 Enable off",retValue);
-        retValue=GT_AxisOff(3);
-        if(!retValue)
-        {
-            ui->enableAllBtn ->setText("Enable");
-        }
-        CommandHandler("Axis3 Enable off",retValue);
+        acsc_EnableM(hComm,axi,nullptr);
+        ui->enableAllBtn->setText("DISABLE");
     }
     else
     {
-        retValue=GT_AxisOn(1);
-        CommandHandler("Axis1 Enable on",retValue);
-        retValue=GT_AxisOn(2);
-        CommandHandler("Axis2 Enable on",retValue);
-        retValue=GT_AxisOn(3);
-        CommandHandler("Axis3 Enable on",retValue);
-        if(!retValue)
-        {
-            ui->enableAllBtn->setText("Disable");
-        }
+        acsc_DisableM(hComm,axi,nullptr);
+        ui->enableAllBtn->setText("ENABLE");
     }
 }
 
 void MainWindow::on_killStopBtn_clicked()
 {
-    emit axis1->moveStop();
-    emit axis2->moveStop();
-    emit axis3->moveStop();
-    GT_Stop(0Xf,0XF);
+    acsc_KillM(MainWindow::hComm,axi,nullptr);
 }
 
-void MainWindow::on_closeBtn_clicked()
-{
-    retValue=GT_Close();
-    emit updateTerm();
-    CommandHandler("close",retValue);
-}
 
 void MainWindow::on_setBtn_clicked()
 {
     QVector<double> pos;
-    double prfPos;
-    GT_GetPrfPos(1,&prfPos);
-    pos<<prfPos;
-    GT_GetPrfPos(2,&prfPos);
-    pos<<prfPos;
-    GT_GetPrfPos(3,&prfPos);
-    pos<<prfPos;
-    pos.clear();
-    pos<<1200<<23000<<235;
+    double fPos;
+    acsc_GetFPosition(hComm,ACSC_AXIS_0,&fPos,nullptr);
+    pos<<fPos;
+    acsc_GetFPosition(hComm,ACSC_AXIS_1,&fPos,nullptr);
+    pos<<fPos;
+    acsc_GetFPosition(hComm,ACSC_AXIS_2,&fPos,nullptr);
+    pos<<fPos;
+//    pos.clear();
+//    pos<<1200<<23000<<235;
     int cur=ui->tabWidget->currentIndex();
     tabWid.at(cur)->setPoint(pos);
 }
@@ -284,11 +264,11 @@ void MainWindow::on_moveBtn_clicked()
     QVector<double> pos;
     int cur=ui->tabWidget->currentIndex();
     pos=tabWid.at(cur)->getPoint();
- //   qDebug()<<pos<<endl;
+    double fpos[4]={pos.at(0),pos.at(1),pos.at(2),-1};
     if(!pos.isEmpty())
     {
-   //     pos1<<(int)(pos.at(0))<<(int)(pos.at(1))<<(int)(pos.at(2));
-        emit move(pos);
+        qDebug()<<pos<<endl;
+        acsc_ToPointM(hComm,0,axi,fpos,nullptr);
     }
     else
     {

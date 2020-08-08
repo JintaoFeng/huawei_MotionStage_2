@@ -27,7 +27,7 @@ public:
 
 public slots:
     void ShowTime();
-    void CommandHandler(QString command, int value);
+    void CommandHandler(int value);
     HANDLE GetHandle()
     {
         return hComm;
@@ -47,8 +47,6 @@ private slots:
     void on_enableAllBtn_clicked();
 
     void on_killStopBtn_clicked();
-
-    void on_closeBtn_clicked();
 
     void on_setBtn_clicked();
 
@@ -71,21 +69,25 @@ private:
     axis* axi3;
 
     int retValue;
-    axis* axis1;
-    axis* axis2;
-    axis* axis3;
-    long axisStatus1;
-    long axisStatus2;
-    long axisStatus3;
+
+    int axisStatus1;
+    int axisStatus2;
+    int axisStatus3;
+    int motorStatus1;
+    int motorStatus2;
+    int motorStatus3;
     QThread *homeThread1;
     QThread *homeThread2;
     QThread *homeThread3;
 
     QList<table*> tabWid;
 
-//    Home *home1;
-//    Home *home2;
-//    Home *home3;
+    char* errorStr;
+    int errorCount;
+    int* errorSize;
+    QSettings *setting;
+    ACSC_CONNECTION_INFO connectInfo;
+    int axi[4];
 
 signals:
     void updateStart();
